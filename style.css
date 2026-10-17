@@ -55,7 +55,7 @@ svg{display:block}
 
 .thumb{position:absolute;left:0;top:0;border-radius:999px;background:var(--thumb);z-index:1;pointer-events:none;
   box-shadow:inset 0 1px 1px rgba(255,255,255,.14),inset 0 0 0 .5px rgba(255,255,255,.08);
-  transition:transform .55s var(--spring),width .55s var(--spring),height .55s var(--spring),opacity .25s}
+  transition:opacity .25s;will-change:transform,width,height}
 
 /* ============ Sidebar ============ */
 #sidebar{flex:none;width:300px;margin:max(12px,env(safe-area-inset-top)) 0 max(12px,env(safe-area-inset-bottom)) 12px;
@@ -309,3 +309,22 @@ svg{display:block}
 .lc{position:absolute;display:flex;align-items:center;gap:2px;padding:4px;pointer-events:none;scale:1.18;transition:scale .5s var(--spring)}
 .lc .tab{pointer-events:none}
 .tab.on,.tab.hov{-webkit-text-stroke:.45px currentColor}
+
+
+/* ============ Liquid Glass 強化（屈折レンズ・液体の伸縮・指に追従するハイライト） ============ */
+.tabs::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;opacity:0;transition:opacity .35s;
+  background:radial-gradient(circle 64px at var(--mx,50%) 50%,rgba(255,255,255,.62),rgba(255,255,255,.12) 55%,transparent 72%);mix-blend-mode:soft-light}
+.tabs.touch::before{opacity:1}
+@media (prefers-color-scheme:dark){.tabs::before{mix-blend-mode:screen;background:radial-gradient(circle 64px at var(--mx,50%) 50%,rgba(255,255,255,.22),rgba(255,255,255,.05) 55%,transparent 72%)}}
+.lens{transform-origin:50% 50%;will-change:transform;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--lensbg-a,#fbfbfd) 88%,transparent),color-mix(in srgb,var(--lensbg-b,#eceef3) 88%,transparent));
+  -webkit-backdrop-filter:blur(3px) saturate(1.8) brightness(1.04);backdrop-filter:blur(3px) saturate(1.8) brightness(1.04);
+  box-shadow:0 18px 40px rgba(0,0,0,.32),0 3px 10px rgba(0,0,0,.2),inset 0 1.5px 2px var(--lensfx),inset 0 -2px 5px rgba(255,255,255,.16),inset 0 0 18px rgba(255,255,255,.18);
+  transition:opacity .22s,scale .6s cubic-bezier(.25,1.6,.4,1)}
+:root{--lensbg-a:#fbfbfd;--lensbg-b:#eceef3}
+@media (prefers-color-scheme:dark){:root{--lensbg-a:#34343a;--lensbg-b:#27272c}}
+.view-camera{--lensbg-a:#3c3c42;--lensbg-b:#2c2c31}
+.lens .lw{position:absolute;inset:0;overflow:visible}
+.lens .gl{position:absolute;inset:0;z-index:4;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(70% 90% at var(--gx,50%) -25%,rgba(255,255,255,.7),transparent 62%),radial-gradient(60% 70% at calc(100% - var(--gx,50%)) 135%,rgba(255,255,255,.4),transparent 65%)}
+.tabs.drag .tab:not(.hov){opacity:.9}

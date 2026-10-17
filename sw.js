@@ -1,5 +1,5 @@
 /* 翻訳 PWA service worker: アプリシェルをキャッシュし、オフラインでも起動できるようにする */
-const VERSION = 'xlate-v4';
+const VERSION = 'xlate-v5';
 const SHELL = [
   './',
   'index.html',

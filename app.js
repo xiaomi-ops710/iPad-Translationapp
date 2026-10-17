@@ -281,15 +281,27 @@
       </div>`;
   }
   const activeKey = () => (view === 'fav' ? 'fav:' + (favFilter || '') : view);
+  const NS = 'http://www.w3.org/2000/svg';
+  /* 選択ハイライト：移動元と移動先をまたぐ「水滴」のように伸びてから目的の形へ収束する */
   function place(th, el) {
     if (!th) return;
     if (!el) { th.style.opacity = '0'; return; }
-    const set = () => {
-      th.style.opacity = '1';
-      th.style.width = el.offsetWidth + 'px'; th.style.height = el.offsetHeight + 'px';
-      th.style.transform = `translate(${el.offsetLeft}px,${el.offsetTop}px)`;
-    };
-    if (!th.dataset.i) { th.style.transition = 'none'; set(); void th.offsetWidth; th.style.transition = ''; th.dataset.i = '1'; } else set();
+    const nx = el.offsetLeft, ny = el.offsetTop, nw = el.offsetWidth, nh = el.offsetHeight;
+    const first = !th.dataset.i;
+    const px = th._x, py = th._y, pw = th._w, ph = th._h;
+    th.style.opacity = '1';
+    th.style.width = nw + 'px'; th.style.height = nh + 'px';
+    th.style.transform = `translate(${nx}px,${ny}px)`;
+    th._x = nx; th._y = ny; th._w = nw; th._h = nh; th.dataset.i = '1';
+    if (first || reduceMotion() || !th.animate || (px === nx && py === ny && pw === nw && ph === nh)) return;
+    const ux = Math.min(px, nx), uy = Math.min(py, ny);
+    const uw = Math.max(px + pw, nx + nw) - ux, uh = Math.max(py + ph, ny + nh) - uy;
+    const horiz = Math.abs(nx - px) >= Math.abs(ny - py);
+    const f = (x, y, w, h) => ({ transform: `translate(${x}px,${y}px)`, width: w + 'px', height: h + 'px' });
+    const mid = horiz ? f(ux, ny + nh * 0.05, uw + 6, nh * 0.9) : f(nx + nw * 0.03, uy, nw * 0.94, uh + 6);
+    const over = horiz ? f(nx - (nx - px) * 0.04, ny - nh * 0.02, nw * 1.05, nh * 1.04) : f(nx - nw * 0.02, ny - (ny - py) * 0.04, nw * 1.04, nh * 1.05);
+    th.getAnimations().forEach((a) => a.cancel());
+    th.animate([f(px, py, pw, ph), { ...mid, offset: 0.38 }, { ...over, offset: 0.72 }, f(nx, ny, nw, nh)], { duration: 680, easing: 'cubic-bezier(.3,.9,.35,1)' });
   }
   function updateThumbs() {
     place($('#tthumb'), $('#tabs .tab.on'));
@@ -929,7 +941,48 @@
    * 選択中のタブを長押し（または少し動かす）とガラスの楕円が出現し、横にスライドしてタブを切り替える。
    * レンズの中はタブ表示の複製を拡大して重ね、「ガラス越しの拡大」を再現する。 */
   let lens = null;
+  const reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let lensSeq = 0;
+
+  /* 屈折マップ：カプセル形のレンズの縁ほど内容を内側へ引き込む（キャンバスで生成 → feDisplacementMap に渡す） */
+  function lensMap(w, h) {
+    const sc = 2, cw = Math.ceil(w * sc), ch = Math.ceil(h * sc), r = ch / 2, bez = r * 0.7;
+    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    const g = cv.getContext('2d'), img = g.createImageData(cw, ch), d = img.data;
+    for (let y = 0; y < ch; y++) {
+      for (let x = 0; x < cw; x++) {
+        const px = Math.min(Math.max(x, r), cw - r), dx = x - px, dy = y - r, dist = Math.hypot(dx, dy), depth = r - dist;
+        let ox = 0, oy = 0;
+        if (depth >= 0 && depth < bez && dist > 0) {
+          const t = 1 - depth / bez, m = t * t * t * 0.5 + t * t * 0.5;
+          ox = -dx / dist * m; oy = -dy / dist * m;
+        }
+        const i = (y * cw + x) * 4;
+        d[i] = 128 + ox * 127; d[i + 1] = 128 + oy * 127; d[i + 2] = 128; d[i + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+  /* レンズ専用の SVG フィルタ（屈折＋R/G/B をわずかにずらす色収差）。Safari でも HTML 要素への filter:url() は有効 */
+  function lensFilter(w, h, id) {
+    const S = Math.round(h * 0.5);
+    const wrap = document.createElementNS(NS, 'svg');
+    wrap.setAttribute('width', '0'); wrap.setAttribute('height', '0');
+    wrap.style.cssText = 'position:absolute;pointer-events:none';
+    const ch = (c, sc) => `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sc}" xChannelSelector="R" yChannelSelector="G" result="d${c}"/><feColorMatrix in="d${c}" type="matrix" values="${c === 'R' ? '1 0 0 0 0' : '0 0 0 0 0'} ${c === 'G' ? '0 1 0 0 0' : '0 0 0 0 0'} ${c === 'B' ? '0 0 1 0 0' : '0 0 0 0 0'} 0 0 0 1 0" result="c${c}"/>`;
+    wrap.innerHTML = `<filter id="${id}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}" color-interpolation-filters="sRGB">
+      <feImage href="${lensMap(w, h)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>
+      ${ch('R', S)}${ch('G', Math.round(S * 1.07))}${ch('B', Math.round(S * 1.14))}
+      <feComposite in="cR" in2="cG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg"/>
+      <feComposite in="rg" in2="cB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>`;
+    return wrap;
+  }
+
   document.addEventListener('pointerdown', (e) => {
+    const bar0 = e.target.closest && e.target.closest('#tabs');
+    if (bar0) { bar0.classList.add('touch'); const r = bar0.getBoundingClientRect(); bar0.style.setProperty('--mx', (e.clientX - r.left) + 'px'); }
     if (e.button > 0 || lens || !app.classList.contains('lay-tabbar')) return;
     const tab = e.target.closest && e.target.closest('#tabs .tab.on[data-nav]');
     if (!tab) return;
@@ -953,28 +1006,38 @@
     const cen = (t) => t.offsetLeft + t.offsetWidth / 2;
     L.min = cen(L.tabs[0]); L.max = cen(L.tabs[L.tabs.length - 1]);
     L.grab = L.x0 - (L.rect.left + cen(act));
+    L.x = cen(act); L.tx = L.x; L.v = 0; L.t = performance.now(); L.rm = reduceMotion();
     const el = document.createElement('div');
     el.className = 'lens'; el.style.width = L.lw + 'px'; el.style.height = L.lh + 'px';
+    const fid = 'lgf' + (++lensSeq);
+    L.svg = lensFilter(L.lw, L.lh, fid);
+    const inner = document.createElement('div'); inner.className = 'lw'; inner.style.filter = `url(#${fid})`;
     const lc = document.createElement('div'); lc.className = 'lc';
-    Array.from(bar.children).filter((c) => !c.classList.contains('thumb') && !c.classList.contains('lens')).forEach((c) => {
+    Array.from(bar.children).filter((c) => !c.classList.contains('thumb') && !c.classList.contains('lens') && c.tagName !== 'svg').forEach((c) => {
       const k = c.cloneNode(true); k.removeAttribute('data-nav'); k.removeAttribute('data-act'); k.classList.remove('on'); lc.appendChild(k);
     });
     L.clones = Array.from(lc.querySelectorAll('.tab')).filter((c) => !c.classList.contains('tab-ic'));
-    el.appendChild(lc); bar.appendChild(el);
-    L.el = el; L.lc = lc;
+    inner.appendChild(lc);
+    const gl = document.createElement('i'); gl.className = 'gl';
+    el.appendChild(inner); el.appendChild(gl); bar.appendChild(L.svg); bar.appendChild(el);
+    L.el = el; L.lc = lc; L.gl = gl;
     bar.classList.add('drag');
-    setLens(cen(act));
+    applyLens(L.x, 0);
     void el.offsetWidth;
     el.classList.add('in');
+    L.raf = requestAnimationFrame(stepLens);
   }
-  function setLens(cx) {
-    const L = lens;
-    cx = Math.max(L.min, Math.min(L.max, cx));
-    L.cx = cx;
+  /* 位置と速度から「ぷるん」と伸び縮みするガラスの形を決める */
+  function applyLens(cx, vx) {
+    const L = lens || L_last;
+    if (!L || !L.el) return;
     const lx = cx - L.lw / 2;
-    L.el.style.transform = `translate(${lx}px,${L.ly}px)`;
+    const s = L.rm ? 0 : Math.min(0.34, Math.abs(vx) / 2600);
+    const sk = L.rm ? 0 : Math.max(-9, Math.min(9, -vx / 150));
+    L.el.style.transform = `translate(${lx}px,${L.ly}px) scale(${1 + s},${1 - s * 0.62}) skewX(${sk}deg)`;
     L.lc.style.left = -lx + 'px'; L.lc.style.top = -L.ly + 'px';
     L.lc.style.transformOrigin = `${cx}px ${L.bh / 2}px`;
+    L.gl.style.setProperty('--gx', (50 - Math.max(-45, Math.min(45, vx / 18))) + '%');
     let h = L.tabs.findIndex((t) => cx >= t.offsetLeft && cx <= t.offsetLeft + t.offsetWidth);
     if (h < 0) h = cx < L.min ? 0 : L.tabs.length - 1;
     if (h !== L.hover) {
@@ -983,35 +1046,51 @@
       L.clones.forEach((t, i) => t.classList.toggle('hov', i === h));
       if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) { /* ignore */ } }
     }
+    L.cx = cx;
+  }
+  let L_last = null;
+  function stepLens(now) {
+    const L = lens || L_last;
+    if (!L || !L.el || L.dead) return;
+    const dt = Math.min(0.032, (now - L.t) / 1000 || 0.016); L.t = now;
+    if (L.rm) { L.x = L.tx; L.v = 0; }
+    else {
+      // 少しだけ弾むバネ（臨界減衰より弱め）
+      const k = L.released ? 900 : 520, c = L.released ? 46 : 30;
+      L.v += ((L.tx - L.x) * k - L.v * c) * dt;
+      L.x += L.v * dt;
+    }
+    applyLens(L.x, L.v);
+    L.raf = requestAnimationFrame(stepLens);
   }
   document.addEventListener('pointermove', (e) => {
+    const bar0 = $('#tabs');
+    if (bar0 && bar0.classList.contains('touch')) { const r = bar0.getBoundingClientRect(); bar0.style.setProperty('--mx', (e.clientX - r.left) + 'px'); }
     const L = lens;
     if (!L || e.pointerId !== L.id) return;
     if (!L.on) { if (Math.hypot(e.clientX - L.x0, e.clientY - L.y0) > 6) startLens(); else return; }
-    setLens(e.clientX - L.rect.left - L.grab);
+    L.tx = Math.max(L.min, Math.min(L.max, e.clientX - L.rect.left - L.grab));
   });
   function endLens(e) {
+    const bar0 = $('#tabs'); if (bar0) bar0.classList.remove('touch');
     const L = lens;
     if (!L || (e && e.pointerId !== L.id)) return;
     lens = null;
     clearTimeout(L.timer);
     try { L.bar.releasePointerCapture(L.id); } catch (_) { /* ignore */ }
     if (!L.on) return;
+    L_last = L;
     suppressClickUntil = Date.now() + 350;
     const target = L.tabs[L.hover] || L.tab;
-    // 影のサムを現在のレンズ位置に置いてから目的のタブへ滑らせる
+    // レンズは目的のタブへ吸い込まれるように収束
+    L.released = true; L.tx = target.offsetLeft + target.offsetWidth / 2;
+    // 影のサムは現在のレンズ位置から液体のように伸びて目的のタブへ
     const th = $('#tthumb');
-    if (th) {
-      th.style.transition = 'none';
-      th.style.width = L.tab.offsetWidth + 'px'; th.style.height = L.tab.offsetHeight + 'px';
-      th.style.transform = `translate(${L.cx - L.tab.offsetWidth / 2}px,${L.tab.offsetTop}px)`;
-      void th.offsetWidth;
-      th.style.transition = '';
-    }
+    if (th) { th._x = L.cx - L.tab.offsetWidth / 2; th._y = L.tab.offsetTop; th._w = L.tab.offsetWidth; th._h = L.tab.offsetHeight; th.dataset.i = '1'; }
     L.bar.classList.remove('drag');
     L.tabs.forEach((t) => t.classList.remove('hov'));
-    L.el.classList.remove('in');
-    setTimeout(() => L.el.remove(), 450);
+    setTimeout(() => L.el.classList.remove('in'), 140);
+    setTimeout(() => { L.dead = true; cancelAnimationFrame(L.raf); L.el.remove(); L.svg.remove(); if (L_last === L) L_last = null; }, 620);
     const name = target.dataset.nav;
     if (name === 'conversation') openConv();
     else nav(name);
