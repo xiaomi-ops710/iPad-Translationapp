@@ -9,33 +9,7 @@
   const app = $('#app');
 
   /* ------------------------------------------------------------------ icons */
-  const sv = (body, o = {}) =>
-    `<svg viewBox="${o.vb || '0 0 24 24'}" fill="${o.fill || 'none'}" stroke="${o.stroke || 'currentColor'}" stroke-width="${o.sw || 1.7}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
-  const I = {
-    translate: `<svg viewBox="0 0 32 31" aria-hidden="true"><path d="M4 2.5h13a2.5 2.5 0 0 1 2.5 2.5v8.5A2.5 2.5 0 0 1 17 16h-6.5L6 19.6V16H4a2.5 2.5 0 0 1-2.5-2.5V5A2.5 2.5 0 0 1 4 2.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><text x="10.4" y="12.3" text-anchor="middle" font-size="9.6" font-weight="700" fill="currentColor" font-family="-apple-system,Helvetica,Arial,sans-serif">A</text><path d="M16.5 12h10a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H25v3.4L21.1 26h-4.6a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3z" fill="currentColor" stroke="var(--sb)" stroke-width="1.2"/><text x="21.5" y="23.2" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff" font-family="-apple-system,'Hiragino Sans',sans-serif">文</text></svg>`,
-    camera: sv('<path d="M4 8h3l1.5-2.5h7L17 8h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/><circle cx="12" cy="14" r="3.7"/><circle cx="18.4" cy="10.7" r=".7" fill="currentColor"/>', { sw: 1.5 }),
-    people: sv('<circle cx="9" cy="8" r="3.1"/><path d="M2.8 20v-1.4a5 5 0 0 1 5-5h2.4a5 5 0 0 1 5 5V20"/><circle cx="17.2" cy="9" r="2.5"/><path d="M17.6 14a4.4 4.4 0 0 1 4.4 4.4V20"/>', { sw: 1.5 }),
-    starO: sv('<path d="M12 3.2l2.7 5.5 6 .9-4.4 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6-4.4-4.2 6-.9z"/>', { sw: 1.5 }),
-    star: sv('<path d="M12 3.2l2.7 5.5 6 .9-4.4 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6-4.4-4.2 6-.9z"/>', { sw: 1.5 }),
-    expand: sv('<path d="M4 9V4h5M4 4l7 7M20 15v5h-5M20 20l-7-7"/>', { sw: 1.5 }),
-    copy: sv('<path d="M9 3h6.5L19 6.5V16a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15.5 3v3.5H19"/><path d="M8 7H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2"/>', { sw: 1.4 }),
-    play: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M9.6 7.4l7.2 4.1c.4.2.4.8 0 1l-7.2 4.1c-.4.2-.9 0-.9-.5V7.9c0-.5.5-.7.9-.5z" fill="var(--card)"/></svg>`,
-    mic: sv('<rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5"/>', { sw: 1.6 }),
-    swap: sv('<path d="M5 8.5h13.5l-3.2-3.2M19 15.5H5.5l3.2 3.2"/>', { sw: 1.9 }),
-    chev: sv('<path d="M5 9l7 7 7-7"/>', { sw: 2.6 }),
-    updown: sv('<path d="M8 10l4-4 4 4M8 14l4 4 4-4"/>', { sw: 2.4 }),
-    clear: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#b4b4b9"/><path d="M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`,
-    window: sv('<rect x="3" y="4.5" width="18" height="15" rx="3.2"/><path d="M3 8.6h18"/>', { sw: 1.6 }),
-    sidebar: sv('<rect x="3" y="4.5" width="18" height="15" rx="3.2"/><path d="M9.2 4.5v15"/>', { sw: 1.6 }),
-    more: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="19" cy="12" r="1.9" fill="currentColor"/></svg>`,
-    photos: sv('<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10.2" r="1.6"/><path d="M4 17l5-4.4 3.4 3 3.2-2.6L20 16"/>', { sw: 1.5 }),
-    torch: sv('<path d="M8.6 3h6.8v3.6L14 9.4V19a1.2 1.2 0 0 1-1.2 1.2h-1.6A1.2 1.2 0 0 1 10 19V9.4L8.6 6.6z" fill="currentColor"/>', { sw: 1.2 }),
-    x: sv('<path d="M5 5l14 14M19 5L5 19"/>', { sw: 2 }),
-    check: sv('<path d="M4.5 12.5l5 5L19.5 7"/>', { sw: 2.4 }),
-    arrow: sv('<path d="M4 12h15M13.5 6.5L19 12l-5.5 5.5"/>', { sw: 1.8 }),
-    bike: `<svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="56" r="17"/><circle cx="96" cy="56" r="17"/><path d="M24 56l16-30h30l26 30M40 26l22 30h-4M58 16h14M35 16h14l-9 10"/></svg>`,
-    bigArrow: `<svg viewBox="0 0 120 40" fill="currentColor" aria-hidden="true"><path d="M2 14h82V4l34 16-34 16V26H2z"/></svg>`
-  };
+  const I = window.XI; // icons.js（SF Symbols 風）
 
   /* -------------------------------------------------------------- languages */
   // [code, 名称, 短い名称, MyMemory, 音声BCP47, tesseract, 入力プレースホルダ, 会話のプレースホルダ]
@@ -75,6 +49,7 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } };
 
   let view = 'translate';
+  let suppressClickUntil = 0;
   let favFilter = null;
   let inputText = '', outText = '', outFor = '', status = 'idle', gender = null;
   let session = [];
@@ -827,6 +802,7 @@
   const itemOf = (el) => { const c = el.closest('[data-id]'); return c ? S.history.find((h) => String(h.id) === c.dataset.id) : null; };
 
   document.addEventListener('click', (e) => {
+    if (Date.now() < suppressClickUntil) return;
     const t = e.target;
     const pick = t.closest('[data-pick]');
     if (pick) {
@@ -948,6 +924,101 @@
     showPop(el, html, { align: 'right' });
     popCb = cb;
   }
+
+  /* ------------------------------------------------ Liquid Glass レンズ（タブバー）
+   * 選択中のタブを長押し（または少し動かす）とガラスの楕円が出現し、横にスライドしてタブを切り替える。
+   * レンズの中はタブ表示の複製を拡大して重ね、「ガラス越しの拡大」を再現する。 */
+  let lens = null;
+  document.addEventListener('pointerdown', (e) => {
+    if (e.button > 0 || lens || !app.classList.contains('lay-tabbar')) return;
+    const tab = e.target.closest && e.target.closest('#tabs .tab.on[data-nav]');
+    if (!tab) return;
+    const bar = $('#tabs');
+    lens = { id: e.pointerId, x0: e.clientX, y0: e.clientY, bar, tab, on: false, hover: -1 };
+    lens.timer = setTimeout(startLens, 140);
+    try { bar.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+  });
+  function startLens() {
+    const L = lens;
+    if (!L || L.on) return;
+    clearTimeout(L.timer);
+    const bar = L.bar, act = L.tab;
+    L.on = true;
+    L.tabs = $$('.tab[data-nav]', bar);
+    L.rect = bar.getBoundingClientRect();
+    L.bh = bar.offsetHeight;
+    L.lw = act.offsetWidth + 36;
+    L.lh = L.bh + 18;
+    L.ly = -(L.lh - L.bh) / 2;
+    const cen = (t) => t.offsetLeft + t.offsetWidth / 2;
+    L.min = cen(L.tabs[0]); L.max = cen(L.tabs[L.tabs.length - 1]);
+    L.grab = L.x0 - (L.rect.left + cen(act));
+    const el = document.createElement('div');
+    el.className = 'lens'; el.style.width = L.lw + 'px'; el.style.height = L.lh + 'px';
+    const lc = document.createElement('div'); lc.className = 'lc';
+    Array.from(bar.children).filter((c) => !c.classList.contains('thumb') && !c.classList.contains('lens')).forEach((c) => {
+      const k = c.cloneNode(true); k.removeAttribute('data-nav'); k.removeAttribute('data-act'); k.classList.remove('on'); lc.appendChild(k);
+    });
+    L.clones = Array.from(lc.querySelectorAll('.tab')).filter((c) => !c.classList.contains('tab-ic'));
+    el.appendChild(lc); bar.appendChild(el);
+    L.el = el; L.lc = lc;
+    bar.classList.add('drag');
+    setLens(cen(act));
+    void el.offsetWidth;
+    el.classList.add('in');
+  }
+  function setLens(cx) {
+    const L = lens;
+    cx = Math.max(L.min, Math.min(L.max, cx));
+    L.cx = cx;
+    const lx = cx - L.lw / 2;
+    L.el.style.transform = `translate(${lx}px,${L.ly}px)`;
+    L.lc.style.left = -lx + 'px'; L.lc.style.top = -L.ly + 'px';
+    L.lc.style.transformOrigin = `${cx}px ${L.bh / 2}px`;
+    let h = L.tabs.findIndex((t) => cx >= t.offsetLeft && cx <= t.offsetLeft + t.offsetWidth);
+    if (h < 0) h = cx < L.min ? 0 : L.tabs.length - 1;
+    if (h !== L.hover) {
+      L.hover = h;
+      L.tabs.forEach((t, i) => t.classList.toggle('hov', i === h));
+      L.clones.forEach((t, i) => t.classList.toggle('hov', i === h));
+      if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) { /* ignore */ } }
+    }
+  }
+  document.addEventListener('pointermove', (e) => {
+    const L = lens;
+    if (!L || e.pointerId !== L.id) return;
+    if (!L.on) { if (Math.hypot(e.clientX - L.x0, e.clientY - L.y0) > 6) startLens(); else return; }
+    setLens(e.clientX - L.rect.left - L.grab);
+  });
+  function endLens(e) {
+    const L = lens;
+    if (!L || (e && e.pointerId !== L.id)) return;
+    lens = null;
+    clearTimeout(L.timer);
+    try { L.bar.releasePointerCapture(L.id); } catch (_) { /* ignore */ }
+    if (!L.on) return;
+    suppressClickUntil = Date.now() + 350;
+    const target = L.tabs[L.hover] || L.tab;
+    // 影のサムを現在のレンズ位置に置いてから目的のタブへ滑らせる
+    const th = $('#tthumb');
+    if (th) {
+      th.style.transition = 'none';
+      th.style.width = L.tab.offsetWidth + 'px'; th.style.height = L.tab.offsetHeight + 'px';
+      th.style.transform = `translate(${L.cx - L.tab.offsetWidth / 2}px,${L.tab.offsetTop}px)`;
+      void th.offsetWidth;
+      th.style.transition = '';
+    }
+    L.bar.classList.remove('drag');
+    L.tabs.forEach((t) => t.classList.remove('hov'));
+    L.el.classList.remove('in');
+    setTimeout(() => L.el.remove(), 450);
+    const name = target.dataset.nav;
+    if (name === 'conversation') openConv();
+    else nav(name);
+    updateThumbs();
+  }
+  document.addEventListener('pointerup', endLens);
+  document.addEventListener('pointercancel', endLens);
 
   window.addEventListener('resize', () => { if (layout() !== lastLay) applyLayout(); else updateThumbs(); });
   if ('speechSynthesis' in window) speechSynthesis.getVoices();

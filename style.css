@@ -284,3 +284,28 @@ svg{display:block}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+
+/* ============ Tab bar lens（長押しで現れるガラスの楕円） ============ */
+:root{--lensbg:linear-gradient(180deg,#fbfbfd,#eceef3);--lensfx:rgba(255,255,255,.9)}
+@media (prefers-color-scheme:dark){:root{--lensbg:linear-gradient(180deg,#34343a,#27272c);--lensfx:rgba(255,255,255,.4)}}
+.view-camera{--lensbg:linear-gradient(180deg,#3c3c42,#2c2c31);--lensfx:rgba(255,255,255,.4)}
+#tabs{touch-action:none;-webkit-user-select:none;user-select:none}
+.tab-ic svg{width:24px;height:24px}
+.tab-ic{padding:10px 15px}
+.tabs.drag #tthumb{opacity:0!important}
+.tabs.drag .tab.on:not(.hov){color:var(--ink)}
+.tab.hov{color:var(--teal)}
+.lens{position:absolute;left:0;top:0;z-index:8;pointer-events:none;border-radius:999px;overflow:hidden;
+  background:var(--lensbg);opacity:0;scale:.7;
+  box-shadow:0 16px 38px rgba(0,0,0,.34),0 3px 10px rgba(0,0,0,.22),inset 0 1.5px 2px var(--lensfx),inset 0 -2px 4px rgba(255,255,255,.14);
+  transition:opacity .2s,scale .55s var(--spring)}
+.lens.in{opacity:1;scale:1}
+.lens::before{content:"";position:absolute;inset:0;z-index:3;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 6px 0 8px -4px rgba(60,150,255,.8),inset -6px 0 8px -4px rgba(255,140,50,.7),inset 0 -5px 8px -4px rgba(255,255,255,.55),inset 0 4px 6px -4px rgba(255,255,255,.75)}
+.lens::after{content:"";position:absolute;inset:0;z-index:3;border-radius:inherit;padding:1.5px;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.08) 35%,rgba(255,255,255,.08) 65%,rgba(255,255,255,.6));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+.lc{position:absolute;display:flex;align-items:center;gap:2px;padding:4px;pointer-events:none;scale:1.18;transition:scale .5s var(--spring)}
+.lc .tab{pointer-events:none}
+.tab.on,.tab.hov{-webkit-text-stroke:.45px currentColor}
