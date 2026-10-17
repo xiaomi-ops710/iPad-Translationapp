@@ -19,7 +19,7 @@
       <path fill="currentColor" mask="url(#xi-tm)" d="M764 338H1094A115 115 0 0 1 1209 453V663A115 115 0 0 1 1094 778H1068V846Q1068 866 1056 880Q1043 897 1022 885L881 778H764A115 115 0 0 1 649 663V453A115 115 0 0 1 764 338Z"/>
     </svg>`,
     // camera
-    camera: sv('<path d="M5.7 7.4H8l1.1-1.9a1 1 0 0 1 .9-.5h4a1 1 0 0 1 .9.5l1.1 1.9h2.3a3 3 0 0 1 3 3v6.6a3 3 0 0 1-3 3H5.7a3 3 0 0 1-3-3v-6.6a3 3 0 0 1 3-3z"/><circle cx="12" cy="13.5" r="3.8"/><circle cx="17.9" cy="10.6" r=".85" fill="currentColor" stroke="none"/>', { sw: 1.6 }),
+    camera: sv('<path d="M8.4 8H6a2.9 2.9 0 0 0-2.9 2.9v4.8A2.9 2.9 0 0 0 6 18.6h12a2.9 2.9 0 0 0 2.9-2.9v-4.8A2.9 2.9 0 0 0 18 8h-2.4l-1-1.6a1.3 1.3 0 0 0-1.1-.6h-3a1.3 1.3 0 0 0-1.1.6z"/><circle cx="12" cy="13.3" r="3.1"/><circle cx="17.7" cy="10.6" r=".75" fill="currentColor" stroke="none"/>', { sw: 1.45 }),
     // person.2
     people: sv('<circle cx="9.1" cy="8.2" r="3.3"/><path d="M3.1 19.4v-.5c0-2.9 2.6-4.9 6-4.9s6 2 6 4.9v.5c0 .3-.2.5-.5.5H3.6c-.3 0-.5-.2-.5-.5z"/><path d="M15.2 5.1a3.1 3.1 0 1 1 .9 5.9"/><path d="M17.3 14.2c2.4.3 4.2 1.9 4.2 4.4v.3c0 .3-.2.5-.5.5h-2.4"/>', { sw: 1.6 }),
     // star / star.fill
@@ -42,9 +42,9 @@
     // xmark.circle.fill
     clear: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#b4b4b9"/><path d="M8.4 8.4l7.2 7.2M15.6 8.4l-7.2 7.2" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`,
     // macwindow（サイドバーを隠す）
-    window: sv('<rect x="2.8" y="4.6" width="18.4" height="14.8" rx="3.6"/><path d="M2.8 8.4A3.6 3.6 0 0 1 6.4 4.6h11.2a3.6 3.6 0 0 1 3.6 3.8v.9H2.8z" fill="currentColor"/>', { sw: 1.6 }),
+    window: sv('<rect x="3.1" y="5" width="17.8" height="14.3" rx="2" /><path d="M8 7.8h8.2" stroke-width="1.25"/>', { sw: 1.45 }),
     // sidebar.left（タブバー左端）
-    sidebar: sv('<rect x="2.8" y="4.6" width="18.4" height="14.8" rx="3.6"/><path d="M9.5 4.8v14.4M5.5 8.7h1.9M5.5 11.5h1.9"/>', { sw: 1.7 }),
+    sidebar: sv('<rect x="3.1" y="5.45" width="17.8" height="13.1" rx="2.4"/><path d="M9.1 5.6v12.8"/><path d="M4.8 8.8h2.2M4.8 11.1h2.2M4.8 13.4h2.2" stroke-width="1.15"/>', { sw: 1.45 }),
     // ellipsis
     more: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.2" cy="12" r="1.85"/><circle cx="12" cy="12" r="1.85"/><circle cx="18.8" cy="12" r="1.85"/></svg>`,
     // photo.on.rectangle

@@ -280,7 +280,7 @@
         ${S.favOpen ? it('fav', I.starO, 'すべてのお気に入り', 'fav:') + pairs.map((p) => { const [a, b] = p.split('>'); return it('fav', I.starO, esc(pairLabel(a, b)), 'fav:' + p, `data-pair="${p}"`); }).join('') : ''}
       </div>`;
   }
-  const activeKey = () => (view === 'fav' ? 'fav:' + (favFilter || '') : view);
+  const activeKey = () => (conv.open ? 'conversation' : view === 'fav' ? 'fav:' + (favFilter || '') : view);
   const NS = 'http://www.w3.org/2000/svg';
   /* 選択ハイライト：移動元と移動先をまたぐ「水滴」のように伸びてから目的の形へ収束する */
   function place(th, el) {
@@ -315,7 +315,7 @@
     const sig = S.favOpen + '|' + pairs.join(',');
     if (sig !== sbSig) { sbSig = sig; $('#sbin').innerHTML = sidebarInner(pairs); }
     const k = activeKey();
-    $$('#tabs .tab[data-nav]').forEach((b) => b.classList.toggle('on', b.dataset.nav === view));
+    $$('#tabs .tab[data-nav]').forEach((b) => b.classList.toggle('on', b.dataset.nav === (conv.open ? 'conversation' : view)));
     $$('#sblist .sb-item').forEach((b) => b.classList.toggle('on', b.dataset.key === k));
     updateThumbs();
   }
@@ -483,6 +483,32 @@
   }
 
   /* ------------------------------------------------------------- popovers */
+  /* 項目を長押し／ホバーすると、薄い楕円が現れて指に追従して滑る */
+  function popHighlight(p) {
+    const hl = document.createElement('i'); hl.className = 'pop-hl'; p.prepend(hl);
+    let cur = null, down = null, firstShow = true;
+    const itemAt = (e) => { const el = document.elementFromPoint(e.clientX, e.clientY); const it = el && el.closest && el.closest('.pop-item'); return it && p.contains(it) && !it.dataset.dis ? it : null; };
+    const show = (it) => {
+      if (!it) { hl.classList.remove('on'); cur = null; return; }
+      cur = it;
+      hl.style.width = it.offsetWidth + 'px'; hl.style.height = it.offsetHeight + 'px';
+      hl.style.transform = `translate(${it.offsetLeft}px,${it.offsetTop}px)`;
+      if (firstShow) { hl.style.transition = 'none'; void hl.offsetWidth; hl.style.transition = ''; firstShow = false; }
+      hl.classList.add('on');
+    };
+    p.addEventListener('pointerdown', (e) => { down = itemAt(e); show(down); });
+    p.addEventListener('pointermove', (e) => { if (down || e.pointerType === 'mouse') show(itemAt(e)); });
+    p.addEventListener('pointerup', (e) => {
+      const was = down; down = null;
+      if (was && e.pointerType !== 'mouse') {
+        const it = itemAt(e);
+        if (it && it !== was) { suppressClickUntil = 0; it.click(); return; }
+        setTimeout(() => hl.classList.remove('on'), 160);
+      }
+    });
+    p.addEventListener('pointercancel', () => { down = null; show(null); });
+    p.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') show(null); });
+  }
   let popCb = null;
   function closePop() { const p = $('#pop'); if (p) p.remove(); popCb = null; }
   function showPop(anchor, html, o = {}) {
@@ -496,6 +522,7 @@
     let y = r.bottom + 8;
     if (y + ph > innerHeight - 8) y = r.top > ph + 16 ? r.top - ph - 8 : Math.max(8, innerHeight - ph - 8);
     p.style.left = x + 'px'; p.style.top = y + 'px';
+    popHighlight(p);
     p.style.transformOrigin = `${Math.min(pw, Math.max(0, r.left + r.width / 2 - x))}px ${y > r.top ? '0%' : '100%'}`;
     return p;
   }
@@ -738,7 +765,7 @@
   }
   function renderConv() {
     let el = $('#conv');
-    if (!el) { el = document.createElement('div'); el.id = 'conv'; document.body.appendChild(el); }
+    if (!el) { el = document.createElement('div'); el.id = 'conv'; ($('#main') || document.body).appendChild(el); }
     const keep = {};
     $$('[data-cin]', el).forEach((i) => (keep[i.dataset.cin] = i.value));
     el.innerHTML = `<button class="cv-x" data-act="convclose" aria-label="閉じる">${I.x}</button>${half('b')}<div class="cv-mid"><button class="swap" data-act="swap" aria-label="言語を入れ替え">${I.swap}</button></div>${half('a')}<button class="cv-more" data-act="more" aria-label="その他">${I.more}</button>`;
@@ -807,8 +834,10 @@
   /* ----------------------------------------------------------------- events */
   function nav(name, pair) {
     closePop();
-    if (name === 'conversation') { openConv(); return; }
-    if (name === view && (name !== 'fav' || (pair || null) === favFilter)) return;
+    if (name === 'conversation') { if (!conv.open) { if (view === 'camera') stopCam(); openConv(); updateChrome(); } return; }
+    const wasConv = conv.open;
+    if (wasConv) closeConv();
+    if (!wasConv && name === view && (name !== 'fav' || (pair || null) === favFilter)) return;
     view = name; favFilter = name === 'fav' ? (pair || null) : null; render({ anim: true });
   }
   const itemOf = (el) => { const c = el.closest('[data-id]'); return c ? S.history.find((h) => String(h.id) === c.dataset.id) : null; };
@@ -946,7 +975,7 @@
 
   /* 屈折マップ：カプセル形のレンズの縁ほど内容を内側へ引き込む（キャンバスで生成 → feDisplacementMap に渡す） */
   function lensMap(w, h) {
-    const sc = 2, cw = Math.ceil(w * sc), ch = Math.ceil(h * sc), r = ch / 2, bez = r * 0.7;
+    const sc = 2, cw = Math.ceil(w * sc), ch = Math.ceil(h * sc), r = ch / 2, bez = r * 0.36;
     const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
     const g = cv.getContext('2d'), img = g.createImageData(cw, ch), d = img.data;
     for (let y = 0; y < ch; y++) {
@@ -954,7 +983,7 @@
         const px = Math.min(Math.max(x, r), cw - r), dx = x - px, dy = y - r, dist = Math.hypot(dx, dy), depth = r - dist;
         let ox = 0, oy = 0;
         if (depth >= 0 && depth < bez && dist > 0) {
-          const t = 1 - depth / bez, m = t * t * t * 0.5 + t * t * 0.5;
+          const t = 1 - depth / bez, m = t * t * (3 - 2 * t) * 0.6 + t * t * t * 0.4;
           ox = -dx / dist * m; oy = -dy / dist * m;
         }
         const i = (y * cw + x) * 4;
@@ -966,14 +995,14 @@
   }
   /* レンズ専用の SVG フィルタ（屈折＋R/G/B をわずかにずらす色収差）。Safari でも HTML 要素への filter:url() は有効 */
   function lensFilter(w, h, id) {
-    const S = Math.round(h * 0.5);
+    const S = Math.round(h * 0.78);
     const wrap = document.createElementNS(NS, 'svg');
     wrap.setAttribute('width', '0'); wrap.setAttribute('height', '0');
     wrap.style.cssText = 'position:absolute;pointer-events:none';
     const ch = (c, sc) => `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sc}" xChannelSelector="R" yChannelSelector="G" result="d${c}"/><feColorMatrix in="d${c}" type="matrix" values="${c === 'R' ? '1 0 0 0 0' : '0 0 0 0 0'} ${c === 'G' ? '0 1 0 0 0' : '0 0 0 0 0'} ${c === 'B' ? '0 0 1 0 0' : '0 0 0 0 0'} 0 0 0 1 0" result="c${c}"/>`;
     wrap.innerHTML = `<filter id="${id}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}" color-interpolation-filters="sRGB">
       <feImage href="${lensMap(w, h)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>
-      ${ch('R', S)}${ch('G', Math.round(S * 1.07))}${ch('B', Math.round(S * 1.14))}
+      ${ch('R', S)}${ch('G', Math.round(S * 1.025))}${ch('B', Math.round(S * 1.05))}
       <feComposite in="cR" in2="cG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg"/>
       <feComposite in="rg" in2="cB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
     </filter>`;
@@ -1092,8 +1121,7 @@
     setTimeout(() => L.el.classList.remove('in'), 140);
     setTimeout(() => { L.dead = true; cancelAnimationFrame(L.raf); L.el.remove(); L.svg.remove(); if (L_last === L) L_last = null; }, 620);
     const name = target.dataset.nav;
-    if (name === 'conversation') openConv();
-    else nav(name);
+    nav(name);
     updateThumbs();
   }
   document.addEventListener('pointerup', endLens);

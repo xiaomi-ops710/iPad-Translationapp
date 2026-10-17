@@ -328,3 +328,37 @@ svg{display:block}
 .lens .gl{position:absolute;inset:0;z-index:4;border-radius:inherit;pointer-events:none;
   background:radial-gradient(70% 90% at var(--gx,50%) -25%,rgba(255,255,255,.7),transparent 62%),radial-gradient(60% 70% at calc(100% - var(--gx,50%)) 135%,rgba(255,255,255,.4),transparent 65%)}
 .tabs.drag .tab:not(.hov){opacity:.9}
+
+
+/* ============ 本物のガラスに近づけたレンズ（ほぼ透明・縁だけ屈折・細い縁取り） ============ */
+.lens{background:rgba(255,255,255,.04)!important;
+  -webkit-backdrop-filter:blur(.6px) saturate(1.35) brightness(1.05)!important;backdrop-filter:blur(.6px) saturate(1.35) brightness(1.05)!important;
+  box-shadow:0 0 0 .6px rgba(0,0,0,.5),0 10px 26px rgba(0,0,0,.22),0 2px 6px rgba(0,0,0,.14),
+    inset 0 0 0 1px rgba(255,255,255,.16),inset 0 5px 7px -5px rgba(255,255,255,.45),inset 0 -5px 7px -5px rgba(255,255,255,.28)!important}
+.lens::before{box-shadow:none!important;
+  background:linear-gradient(180deg,rgba(0,0,0,var(--lensedge,.16)) 0,transparent 20%,transparent 80%,rgba(0,0,0,var(--lensedge,.16)) 100%)}
+@media (prefers-color-scheme:dark){:root{--lensedge:.5}}
+.view-camera{--lensedge:.5}
+.lens::after{opacity:.35}
+.lens .gl{opacity:.35}
+.lc{scale:1.04!important}
+.lens.in{scale:1}
+
+/* ============ 会話：タブバーとサイドバーを残したまま表示 ============ */
+#conv{position:absolute!important;inset:0!important;z-index:5!important;padding-top:calc(74px + env(safe-area-inset-top))}
+.cv-x{display:none!important}
+
+/* ============ ポップアップ：角丸・長押しで出る薄い楕円 ============ */
+.pop{border-radius:30px;padding:12px;-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8)}
+.pop-item{z-index:1;border-radius:999px;padding:13px 18px 13px 46px;min-height:50px;align-items:center}
+.pop-item:hover,.pop-item.sel{background:none}
+.pop-item.sel{font-weight:500}
+.pop-hl{position:absolute;left:0;top:0;z-index:0;border-radius:999px;pointer-events:none;opacity:0;scale:.92;
+  background:linear-gradient(100deg,var(--hlA,rgba(110,110,125,.16)),var(--hlB,rgba(110,110,125,.24)));
+  transition:transform .42s cubic-bezier(.3,1.25,.45,1),width .3s,height .3s,opacity .18s,scale .4s cubic-bezier(.3,1.5,.45,1)}
+.pop-hl.on{opacity:1;scale:1}
+@media (prefers-color-scheme:dark){:root{--hlA:rgba(255,255,255,.14);--hlB:rgba(255,255,255,.26)}}
+.pop-sep{margin:6px 18px}
+.lens .gl{background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 28%,transparent 72%,rgba(255,255,255,.06))!important;opacity:1!important}
+.tabs.drag .tab:not(.hov){opacity:1}
+.tabs.drag::before{opacity:0!important}
