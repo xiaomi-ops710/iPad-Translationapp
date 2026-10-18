@@ -42,7 +42,7 @@
   /* ------------------------------------------------------------------ state */
   const KEY = 'xlate.pwa.v1';
   const loadS = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
-  const S = Object.assign({ src: 'ja', tgt: 'en-US', history: [], vocab: [], chats: [], appear: {}, siri: { fmt: 'reading', lv: 'e3', n: 3, filter: 'all' }, layout: null, favOpen: true, speak: false, convSpeak: true, detect: false, ai: { key: '', model: 'gemini-3.6-flash' } }, loadS());
+  const S = Object.assign({ src: 'ja', tgt: 'en-US', history: [], vocab: [], chats: [], appear: {}, siri: { fmt: 'reading', lv: 'e3', n: 3, filter: 'all', vn: 10 }, layout: null, favOpen: true, speak: false, convSpeak: true, detect: false, ai: { key: '', model: 'gemini-3.6-flash' } }, loadS());
   if (!LB[S.src]) S.src = 'ja';
   if (!LB[S.tgt]) S.tgt = 'en-US';
   if (!S.layout) S.layout = window.innerWidth >= 900 ? 'sidebar' : 'tabbar';
@@ -997,7 +997,7 @@
   ];
   const lvOf = (id) => LEVELS.find((l) => l.id === id) || LEVELS[2];
   const lvName = (id) => { const l = lvOf(id); return l.g + l.n; };
-  const SR = { cur: null, pane: 'list', panel: 'chat', loading: false, asking: false, draft: '', vq: '', vfilter: 'all', study: null, adding: false, vadd: '', playing: false, playMi: -1, rec: null, started: false };
+  const SR = { cur: null, pane: 'list', panel: 'chat', loading: false, asking: false, draft: '', vq: '', vfilter: 'all', study: null, vedit: false, adding: false, vadd: '', playing: false, playMi: -1, rec: null, started: false };
   const SIRI_SETTINGS = () => { S.siri = Object.assign({ fmt: 'reading', lv: 'e3', n: 3, filter: 'all' }, S.siri || {}); return S.siri; };
   const mdInline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
   function md(s) {
@@ -1216,24 +1216,44 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       <div class="suggs">${sugg.map((s) => `<button class="chip" data-act="s:sugg" data-t="${esc(s)}">${esc(s)}</button>`).join('')}</div>
       ${hasAI() ? '' : `<div class="siri-banner"><span>Siri は Gemini で動作します。API キーを設定してください。</span><button class="siri-btn sm" data-act="s:ai">設定</button></div>`}</div>`;
   }
+  const IC_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.2"/><path d="M15.2 15.2L20 20"/></svg>';
   function vocabPanelHTML() {
-    const all = S.vocab || [], known = all.filter((v) => v.known).length;
-    if (SR.study) return `<div class="sr-vhead"><button class="sr-pill" data-act="s:sdone">${I.back}単語帳</button></div>${studyHTML()}`;
+    const all = S.vocab || [], known = all.filter((v) => v.known).length, st = SIRI_SETTINGS();
+    if (SR.study) return `<div class="av-nav"><button class="av-back" data-act="s:sdone">${I.back}<span>単語帳</span></button></div>${studyHTML()}`;
     const list = vocabList();
-    const chip = (v, l) => `<button class="chip${SR.vfilter === v ? ' on' : ''}" data-act="s:vf" data-v="${v}">${l}</button>`;
-    return `<div class="sr-vhead"><button class="sr-pill" data-act="s:panel" data-v="chat">${I.back}チャット</button><h2>単語帳</h2></div>
-      <div class="siri-card vadd-bar"><input class="siri-in" data-sk="vadd" placeholder="単語・熟語を追加（日本語でもOK）" value="${esc(SR.vadd)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="siri-btn" data-act="s:vaddgo" ${SR.adding ? 'disabled' : ''}>${SR.adding ? '追加中…' : '追加'}</button></div>
-      <div class="vtools"><div class="chips">${chip('all', 'すべて')}${chip('new', '未習得')}${chip('known', '習得済')}</div><span class="vstat">${all.length}語 ・ 習得 ${known}</span></div>
-      ${all.length > 2 ? `<input class="siri-in search" data-sk="vq" placeholder="検索" value="${esc(SR.vq)}" autocomplete="off" spellcheck="false">` : ''}
-      ${all.length ? `<button class="siri-btn big" data-act="s:study">学習を始める（${(all.filter((v) => !v.known).length || all.length)}語）</button>` : ''}
-      <div id="vlist">${vlistHTML(list, all)}</div>`;
+    const seg = [['all', 'すべて'], ['new', '未習得'], ['known', '習得済']].map(([v, l]) => `<button class="${SR.vfilter === v ? 'on' : ''}" data-act="s:vf" data-v="${v}">${l}</button>`).join('');
+    return `<div class="av"><div class="av-nav"><button class="av-back" data-act="s:panel" data-v="chat">${I.back}<span>Siri</span></button><button class="av-edit" data-act="s:vedit">${SR.vedit ? '完了' : '編集'}</button></div>
+      <h2 class="av-title">単語帳</h2><p class="av-sub">${all.length}語 ・ 習得済み ${known}語</p>
+      ${all.length > 3 ? `<label class="av-search">${IC_SEARCH}<input data-sk="vq" placeholder="検索" value="${esc(SR.vq)}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>` : ''}
+      <div class="av-seg">${seg}</div>
+      <div class="av-h">自動で追加</div>
+      <div class="av-group"><button class="av-r nav" data-act="s:vlv"><span>難易度</span><em>${esc(lvName(st.lv))}</em>${I.chevR}</button><button class="av-r nav" data-act="s:vn"><span>追加する語数</span><em>${st.vn || 10}語</em>${I.chevR}</button>
+        <button class="av-r act" data-act="s:vgen" ${SR.adding ? 'disabled' : ''}>${SR.adding ? '<i class="mini-spin"></i>生成しています…' : '難易度に合わせて単語を自動生成'}</button></div>
+      <p class="av-cap">選んだ難易度（${esc(lvName(st.lv))}）に合う単語・熟語を、意味と例文つきで Siri が追加します。</p>
+      <div class="av-h">単語</div>
+      <div class="av-group"><label class="av-r add"><span class="plus">＋</span><input data-sk="vadd" placeholder="新しい単語（日本語でもOK）" value="${esc(SR.vadd)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="av-addbtn" data-act="s:vaddgo" ${SR.adding ? 'disabled' : ''}>追加</button></label>
+        <div id="vlist">${vlistHTML(list, all)}</div></div>
+      ${all.length ? `<button class="av-study" data-act="s:study">学習を始める（${(all.filter((v) => !v.known).length || all.length)}語）</button>` : ''}</div>`;
   }
   function vlistHTML(list, all) {
-    if (!all.length) return `<div class="siri-card center empty"><p>単語帳はまだ空です。<br>上の入力欄から追加するか、問題の「重要語句」や回答から追加できます。</p></div>`;
-    if (!list.length) return `<div class="siri-card center empty"><p>該当する単語がありません。</p></div>`;
-    return list.map((v) => `<div class="siri-card vw${v.known ? ' known' : ''}"><div class="vwh"><b>${esc(v.w)}</b>${v.pos ? `<span class="pos">${esc(v.pos)}</span>` : ''}<span class="sp"></span>
-        <button data-act="s:vspeak" data-id="${v.id}" aria-label="発音">${I.play}</button><button class="${v.known ? 'on' : ''}" data-act="s:vknow" data-id="${v.id}" aria-label="習得済みにする">${I.check}</button><button data-act="s:vdel" data-id="${v.id}" aria-label="削除">${I.x}</button></div>
-        <div class="m">${esc(v.m || '（意味が未入力です）')}</div>${v.ex ? `<div class="ex">${esc(v.ex)}${v.exj ? `<span>${esc(v.exj)}</span>` : ''}</div>` : ''}</div>`).join('');
+    if (!all.length) return `<div class="av-empty">単語帳は空です。<br>上の「自動生成」や入力欄から追加できます。</div>`;
+    if (!list.length) return `<div class="av-empty">該当する単語がありません。</div>`;
+    return list.map((v) => `<div class="av-r word${v.known ? ' known' : ''}">${SR.vedit ? `<button class="av-minus" data-act="s:vdel" data-id="${v.id}" aria-label="削除"><i></i></button>` : `<button class="av-chk${v.known ? ' on' : ''}" data-act="s:vknow" data-id="${v.id}" aria-label="習得済み"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4 8-9"/></svg></button>`}
+      <div class="tx"><div class="wl"><b>${esc(v.w)}</b>${v.pos ? `<i class="pos">${esc(v.pos)}</i>` : ''}</div><span>${esc(v.m || '（意味が未入力です）')}</span>${v.ex ? `<small>${esc(v.ex)}</small>` : ''}</div>
+      <button class="av-sp" data-act="s:vspeak" data-id="${v.id}" aria-label="発音">${I.speaker}</button></div>`).join('');
+  }
+  async function vocabGenerate() {
+    if (!hasAI()) { toast('Siri を使うには Gemini の API キーが必要です'); openSheet(); return; }
+    if (SR.adding) return;
+    const st = SIRI_SETTINGS(), n = st.vn || 10, have = (S.vocab || []).map((v) => v.w.toLowerCase());
+    SR.adding = true; siriRender(true);
+    try {
+      const txt = await aiGenerate([{ role: 'user', parts: [{ text: `Create ${n} English vocabulary items (single words or common phrases) that a ${lvName(st.lv)} learner should study (${lvOf(st.lv).hint}). Choose useful, frequent items for exactly that level, mixing parts of speech. Do NOT include any of these already-saved items: ${have.slice(0, 150).join(', ') || '(none)'}. Return a JSON array of {w (English), pos (Japanese part of speech), m (concise Japanese meaning), ex (one natural English example sentence at the level), exj (Japanese translation of the example)}. Variation seed: ${Math.random().toString(36).slice(2, 8)}.` }] }], { json: true, schema: VOCAB_SCHEMA, temp: 0.9, think: 'low', max: 8192 });
+      const arr = jparse(txt) || []; let c = 0;
+      arr.forEach((v) => { if (v && v.w && addVocab(v)) c++; });
+      toast(c ? `${lvName(st.lv)}の単語を${c}語追加しました` : '新しい単語を追加できませんでした');
+    } catch (e) { toast('単語を生成できませんでした：' + String(e.message || e).slice(0, 60)); }
+    SR.adding = false; siriRender(true);
   }
   function studyHTML() {
     const s = SR.study, byId = (id) => (S.vocab || []).find((v) => v.id === id);
@@ -1280,7 +1300,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     const st = SIRI_SETTINGS();
     let g = '', html = '';
     LEVELS.forEach((l) => { if (l.g !== g) { g = l.g; html += `<div class="pop-h">${g}</div>`; } html += `<button class="pop-item" data-pick="${l.id}">${l.id === st.lv ? `<span class="ck">${I.check}</span>` : ''}${l.g === '英検' ? '英検 ' : ''}${esc(l.n)}</button>`; });
-    showPop(el, html, { align: 'left' }); popCb = (k) => { st.lv = k; save(); };
+    showPop(el, html, { align: 'left' }); popCb = (k) => { st.lv = k; save(); if (view === 'siri') siriRender(true); };
   }
   function plusMenu(el) {
     const st = SIRI_SETTINGS();
@@ -1329,10 +1349,14 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       case 's:cvocab': extractVocab(Number(el.dataset.i)); break;
       case 's:ccopy': { const c = curChat(), m = c && c.msgs[Number(el.dataset.i)]; if (m) copyText(m.t); break; }
       case 's:vaddgo': vocabAdd(); break;
+      case 's:vedit': SR.vedit = !SR.vedit; siriRender(true); break;
+      case 's:vlv': levelPop(el); e.stopPropagation(); break;
+      case 's:vn': st.vn = (st.vn || 10) === 5 ? 10 : (st.vn || 10) === 10 ? 20 : 5; save(); siriRender(true); break;
+      case 's:vgen': vocabGenerate(); break;
       case 's:vf': SR.vfilter = el.dataset.v; siriRender(true); break;
       case 's:vspeak': { const v = (S.vocab || []).find((x) => x.id === el.dataset.id); if (v) speak(v.w, 'en-US'); e.stopPropagation(); break; }
       case 's:vknow': { const v = (S.vocab || []).find((x) => x.id === el.dataset.id); if (v) { v.known = !v.known; save(); siriRender(true); } break; }
-      case 's:vdel': { const v = (S.vocab || []).find((x) => x.id === el.dataset.id); if (v && confirm(`「${v.w}」を単語帳から削除しますか？`)) { S.vocab = S.vocab.filter((x) => x !== v); save(); siriRender(true); } break; }
+      case 's:vdel': { const v = (S.vocab || []).find((x) => x.id === el.dataset.id); if (v && (SR.vedit || confirm(`「${v.w}」を単語帳から削除しますか？`))) { S.vocab = S.vocab.filter((x) => x !== v); save(); siriRender(true); } break; }
       case 's:study': studyStart(); break;
       case 's:sdone': SR.study = null; siriRender(); break;
       case 's:flip': if (SR.study) { SR.study.flip = !SR.study.flip; const f = $('.flash'); if (f) f.classList.toggle('flip', SR.study.flip); } break;
@@ -1435,12 +1459,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       case 'st:go': SET.stack.push(el.dataset.p); renderSettings('fwd'); break;
       case 'st:ai': openSheet(); break;
       case 'st:mode': a.mode = el.dataset.v; save(); applyAppearance(); renderSettings(); break;
-      case 'st:tg': {
-        const k = el.dataset.k;
-        if (k === 'auto') { a.mode = a.mode === 'auto' ? effTheme() : 'auto'; save(); applyAppearance(); renderSettings(); }
-        else { a[k] = !a[k]; el.classList.toggle('on', !!a[k]); el.setAttribute('aria-checked', String(!!a[k])); save(); applyAppearance(); }
-        break;
-      }
+      case 'st:tg': { if (Date.now() < swGuard) break; swSet(el, !el.classList.contains('on') && el.dataset.k !== 'auto' ? true : el.dataset.k === 'auto' ? a.mode !== 'auto' : false); break; }
       default: break;
     }
   }
@@ -1465,10 +1484,32 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   document.addEventListener('pointermove', (e) => { if (slDrag) slSet(slDrag, e.clientX); });
   const slEnd = () => { if (!slDrag) return; slDrag.classList.remove('drag'); slDrag = null; save(); };
   document.addEventListener('pointerup', slEnd); document.addEventListener('pointercancel', slEnd);
-  /* スイッチ：押している間 Liquid Glass のレンズを表示 */
-  document.addEventListener('pointerdown', (e) => { const s = e.target.closest && e.target.closest('.st-sw'); if (s) s.classList.add('press'); });
-  const swUp = () => $$('.st-sw.press').forEach((s) => setTimeout(() => s.classList.remove('press'), 140));
-  document.addEventListener('pointerup', swUp); document.addEventListener('pointercancel', swUp);
+  /* スイッチ：押している間 Liquid Glass のレンズを表示。タップでもドラッグでも確実に切り替わる */
+  let swDrag = null, swGuard = 0;
+  function swSet(el, want) {
+    const k = el.dataset.k, a = AP();
+    if (k === 'auto') { const isAuto = a.mode === 'auto'; if (isAuto === want) return; a.mode = want ? 'auto' : effTheme(); save(); applyAppearance(); renderSettings(); return; }
+    if (!!a[k] === want) return;
+    a[k] = want; el.classList.toggle('on', want); el.setAttribute('aria-checked', String(want)); save(); applyAppearance();
+  }
+  document.addEventListener('pointerdown', (e) => {
+    const s = e.target.closest && e.target.closest('.st-sw'); if (!s || e.button > 0) return;
+    swDrag = { el: s, x0: e.clientX, on: s.classList.contains('on'), moved: false, id: e.pointerId, px: 0 };
+    s.classList.add('press'); try { s.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!swDrag || e.pointerId !== swDrag.id) return;
+    const dx = e.clientX - swDrag.x0; if (Math.abs(dx) > 5) swDrag.moved = true;
+    if (swDrag.moved) { const i = swDrag.el.firstElementChild, base = swDrag.on ? 26 : 0; swDrag.px = Math.max(0, Math.min(26, base + dx)); i.style.transition = 'none'; i.style.transform = `translateX(${swDrag.px}px)`; }
+  });
+  function swEnd(e, cancel) {
+    if (!swDrag || (e && e.pointerId !== swDrag.id)) return;
+    const d = swDrag; swDrag = null; const i = d.el.firstElementChild; i.style.transition = ''; i.style.transform = '';
+    setTimeout(() => d.el.classList.remove('press'), 160);
+    if (cancel && !d.moved) return;
+    swGuard = Date.now() + 450; swSet(d.el, d.moved ? d.px > 13 : !d.on);
+  }
+  document.addEventListener('pointerup', (e) => swEnd(e, false)); document.addEventListener('pointercancel', (e) => swEnd(e, true));
 
   /* ----------------------------------------------------------------- events */
   function nav(name, pair) {
@@ -1719,7 +1760,10 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     const lx = cx - L.lw / 2;
     const s = L.rm ? 0 : Math.min(0.34, Math.abs(vx) / 2600);
     const sk = L.rm ? 0 : Math.max(-9, Math.min(9, -vx / 150));
-    L.el.style.transform = `translate(${lx}px,${L.ly}px) scale(${1 + s},${1 - s * 0.62}) skewX(${sk}deg)`;
+    const imp = Math.max(L.imp || 0, L.rm ? 0 : Math.min(1, Math.abs(L.over || 0) / 70) * 0.6);
+    const sx = (1 + s) * (1 - imp * 0.14), sy = (1 - s * 0.62) * (1 + imp * 0.08);
+    L.el.style.transformOrigin = imp > 0.02 ? (L.side < 0 ? '0% 50%' : '100% 50%') : '50% 50%';
+    L.el.style.transform = `translate(${lx}px,${L.ly}px) scale(${sx},${sy}) skewX(${sk}deg)`;
     L.lc.style.left = -lx + 'px'; L.lc.style.top = -L.ly + 'px';
     // レンズの下にある本物のタブ文字を隠す（透明なガラス越しに二重に見えないように）
     const h0 = lx + 7, h1 = lx + L.lw - 7;
@@ -1752,6 +1796,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       L.v += ((L.tx - L.x) * k - L.v * c) * dt;
       L.x += L.v * dt;
     }
+    if (L.imp) { L.imp *= Math.exp(-dt * 7); if (L.imp < 0.02) L.imp = 0; }
     applyLens(L.x, L.v);
     L.raf = requestAnimationFrame(stepLens);
   }
@@ -1761,7 +1806,15 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     const L = lens;
     if (!L || e.pointerId !== L.id) return;
     if (!L.on) { if (Math.hypot(e.clientX - L.x0, e.clientY - L.y0) > 6) startLens(); else return; }
-    L.tx = Math.max(L.min, Math.min(L.max, e.clientX - L.rect.left - L.grab));
+    const raw = e.clientX - L.rect.left - L.grab, over = raw < L.min ? raw - L.min : raw > L.max ? raw - L.max : 0;
+    L.over = over; L.tx = Math.max(L.min, Math.min(L.max, raw)) + Math.sign(over) * Math.min(12, Math.abs(over) * 0.25);
+    const edge = over !== 0 || L.tx <= L.min + 0.5 || L.tx >= L.max - 0.5;
+    if (edge && !L.atEdge && !L.rm) { // 端に当たった：ぶにゅっと潰れてバーも揺れる
+      L.imp = Math.min(1, 0.45 + Math.abs(L.v || 0) / 1100); L.side = raw < (L.min + L.max) / 2 ? -1 : 1;
+      if (L.bar.animate) L.bar.animate([{ scale: '1 1' }, { scale: '1.022 .975' }, { scale: '1 1' }], { duration: 420, easing: 'cubic-bezier(.3,1.5,.4,1)' });
+      if (navigator.vibrate) { try { navigator.vibrate(8); } catch (_) { /* ignore */ } }
+    }
+    L.atEdge = edge;
   });
   function endLens(e) {
     const bar0 = $('#tabs'); if (bar0) bar0.classList.remove('touch');
@@ -1781,8 +1834,16 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     if (th) { th._x = L.cx - L.tab.offsetWidth / 2; th._y = L.tab.offsetTop; th._w = L.tab.offsetWidth; th._h = L.tab.offsetHeight; th.dataset.i = '1'; }
     L.bar.classList.remove('drag');
     L.tabs.forEach((t) => t.classList.remove('hov'));
-    setTimeout(() => { L.el.classList.remove('in'); L.nomask = true; }, 140);
-    setTimeout(() => { L.dead = true; cancelAnimationFrame(L.raf); L.el.remove(); L.svg.remove(); if (L_last === L) L_last = null; }, 620);
+    L.imp = 0; L.over = 0;
+    // レンズが目的のタブへ収まったら、元の選択楕円の大きさへ「きゅっ」と縮んで溶け込む
+    setTimeout(() => {
+      L.nomask = true;
+      if (L.rm || !L.el.animate) { L.el.classList.remove('in'); return; }
+      const rx = target.offsetWidth / L.lw, ry = target.offsetHeight / L.lh;
+      L.el.animate([{ scale: '1 1', opacity: 1 }, { scale: `${rx * 1.1} ${ry * 1.16}`, opacity: 0.95, offset: 0.5 }, { scale: `${rx} ${ry}`, opacity: 0 }], { duration: 480, easing: 'cubic-bezier(.3,.9,.3,1)', fill: 'forwards' });
+      L.lc.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, fill: 'forwards' });
+    }, 170);
+    setTimeout(() => { L.dead = true; cancelAnimationFrame(L.raf); L.el.remove(); L.svg.remove(); if (L_last === L) L_last = null; }, 760);
     const name = target.dataset.nav;
     nav(name);
     updateThumbs();
