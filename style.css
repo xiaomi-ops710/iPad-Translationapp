@@ -385,3 +385,96 @@ svg{display:block}
 :root{--goo:#f4f4f8}
 @media (prefers-color-scheme:dark){:root{--goo:#35353a}}
 .pop.opening{transition:opacity .2s}
+
+/* カメラ翻訳：写真は全体表示、オーバーレイは箱に合わせて折り返し */
+#cam #camimg{object-fit:contain}
+#camov .ov{white-space:normal;line-height:1.12;padding:0 2px;font-weight:600;border-radius:5px;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,.28);opacity:.94}
+
+/* ======================================================================
+   スマホ向けUI（幅 < 700px）：下部タブバー（アイコン＋ラベル）・大見出し・縦積みカード・縦長カメラ
+   ====================================================================== */
+.tic{display:none}
+.phbar{display:none}
+.phone .phbar{display:flex;position:absolute;left:0;right:0;top:0;z-index:8;align-items:center;justify-content:space-between;pointer-events:none;
+  padding:calc(env(safe-area-inset-top) + 0px) 16px 0;height:calc(env(safe-area-inset-top) + 56px)}
+.phone .phbar.off{display:none}
+.phone .phbar>*{pointer-events:auto}
+.ph-circ,.ph-pill{height:44px;border-radius:999px;display:grid;place-items:center;color:var(--ink);
+  background:var(--glass);-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);
+  box-shadow:0 0 0 .5px rgba(255,255,255,.12) inset,0 1px 8px rgba(0,0,0,.18)}
+.ph-circ{width:44px}.ph-circ svg{width:24px;height:24px}
+.ph-pill{padding:0 20px;font-size:17px;font-weight:600}
+.ph-t{position:absolute;left:50%;transform:translateX(-50%);font-size:17px;font-weight:700;pointer-events:none}
+.ph-large{display:none}
+.phone .ph-large{display:block;font-size:34px;font-weight:800;letter-spacing:.01em;margin:6px 4px 12px}
+
+/* 下部のタブバー（Liquid Glass）*/
+.phone #topbar{top:auto;bottom:0;height:auto;padding:0 0 max(12px,calc(env(safe-area-inset-bottom) - 13px));align-items:flex-end}
+.phone #topbar::before{display:none}
+.phone .more-btn,.phone .tab-ic,.phone .tab[data-nav="fav"]{display:none!important}
+.phone .tabs{padding:4px;gap:0;border-radius:999px}
+.phone .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:88px;padding:5px 0 7px;font-size:12px;font-weight:600;border-radius:999px;color:var(--ink)}
+.phone .tab.on{color:var(--teal)}
+.phone .tic{display:block;height:30px;width:100%;display:flex;justify-content:center;align-items:center}
+.phone .tic svg{width:40px;height:40px;flex:none;margin:-6px 0}
+.phone .thumb{background:rgba(0,0,0,.5)}
+@media (prefers-color-scheme:light){.phone .thumb{background:rgba(0,0,0,.07)}}
+.phone .lens{border-radius:999px}
+.phone .lc .tab[data-nav="fav"]{display:none}
+
+/* コンテンツ */
+.phone #content{padding:calc(env(safe-area-inset-top) + 58px) 16px calc(112px + env(safe-area-inset-bottom))}
+.phone .card{grid-template-columns:1fr;border-radius:34px;margin-bottom:14px}
+.phone .half{padding:18px 22px 14px 26px}
+.phone .half.r{padding-left:26px;padding-top:14px}
+.phone .mid{margin:0 26px;height:1px;position:relative}
+.phone .vline{width:100%;height:1px}
+.phone .swap{width:54px;height:54px;margin:-27px 0 0 -27px;background:var(--bg);box-shadow:none}
+.phone .swap svg{width:26px;height:26px;transform:rotate(90deg)}
+.phone .tx{font-size:34px}
+.phone .tx.sm{font-size:25px}
+.phone .card.live .half.l{min-height:150px}
+.phone .card.live .half.r{min-height:150px}
+.phone .acts{padding-top:12px}
+
+/* カメラ：上に余白・縦長プレビュー・下に操作ボタン */
+.phone.view-camera #content{background:#121212}
+.phone #cam{background:#121212}
+.phone #cam video,.phone #cam #camimg{inset:auto;left:0;top:calc(env(safe-area-inset-top) + 86px);width:100%;height:calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 254px)}
+.phone #camdemo{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 86px);bottom:calc(env(safe-area-inset-bottom) + 168px);overflow:hidden}
+.phone .cam-hint{top:calc(env(safe-area-inset-top) + 86px + 24px);font-size:14px;padding:6px 16px;border-radius:999px;background:rgba(70,60,62,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.phone .cam-langs{bottom:calc(env(safe-area-inset-bottom) + 168px + 14px);background:rgba(70,60,62,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.phone .cam-ctl{left:0;right:0;top:auto;bottom:calc(env(safe-area-inset-bottom) + 88px);transform:none;flex-direction:row;justify-content:space-between;padding:0 34px;gap:0}
+.phone .cam-ctl button{width:46px;height:46px;background:rgba(255,255,255,.14)}
+.phone .cam-ctl .shutter{width:64px;height:64px;background:rgba(255,255,255,.16);box-shadow:0 0 0 1px rgba(255,255,255,.1) inset}
+.phone .cam-ctl .shutter i{width:42px;height:42px;box-shadow:0 0 0 3px #fff inset;border-radius:50%}
+.phone .cam-ctl .shutter.paused i{background:#fff}
+.phone .cam-ctl button svg{width:24px;height:24px}
+
+/* 会話：1列表示（吹き出し入力＋中央のマイク） */
+.phone #conv{padding-top:calc(env(safe-area-inset-top) + 56px)!important}
+#conv.single{padding-bottom:0}
+.cv-single{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;padding:0 16px calc(env(safe-area-inset-bottom) + 176px)}
+.cv-single .cv-msgs{flex:1;min-height:0;overflow-y:auto;padding:8px 0}
+.smsg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;animation:cardIn .5s var(--spring) both;position:relative}
+.smsg.r{align-items:flex-end}.smsg.l{align-items:flex-start}
+.smsg .bub{max-width:82%;font-size:19px}
+.smsg .play{position:absolute;bottom:6px;width:30px;height:30px;margin:0}
+.smsg.r .play{left:0}.smsg.l .play{right:0}
+.cv-bubs{display:flex;flex-direction:column;gap:12px;padding-top:6px}
+.cv-single .cv-in{position:relative;width:min(78%,340px);padding:12px 18px 14px;border-radius:26px}
+.cv-single .cv-in.r{align-self:flex-end}.cv-single .cv-in.l{align-self:flex-start}
+.cv-single .cv-in::before,.cv-single .cv-in::after{content:"";position:absolute;bottom:0;height:18px}
+.cv-single .cv-in.r::before{right:-8px;width:20px;background:var(--card);border-bottom-left-radius:16px 14px}
+.cv-single .cv-in.r::after{right:-26px;width:26px;background:var(--bg);border-bottom-left-radius:10px}
+.cv-single .cv-in.l::before{left:-8px;width:20px;background:var(--card);border-bottom-right-radius:16px 14px}
+.cv-single .cv-in.l::after{left:-26px;width:26px;background:var(--bg);border-bottom-right-radius:10px}
+.cv-single .cv-in .lang-sel{font-size:16px;font-weight:700}
+.cv-single .cv-in input{font-size:26px;font-weight:700}
+.cv-mic.single{bottom:calc(env(safe-area-inset-bottom) + 86px);width:64px;height:64px;margin-left:-32px;background:var(--teal);border:1px solid rgba(255,255,255,.35);color:#000;box-shadow:0 0 18px rgba(98,211,225,.3)}
+.cv-mic.single svg{width:28px;height:28px}
+.phone #conv.single .cv-more,.phone #conv.single .cv-x{display:none}
+.phone .cam-langs .lang-sel,.phone .cam-hint{white-space:nowrap}
+.phone .cam-langs{padding:9px 16px;gap:4px}
+.phone #toast{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)}
+.phone .cv-single .cv-in input{min-width:0}
