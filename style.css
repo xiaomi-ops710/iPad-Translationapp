@@ -362,3 +362,26 @@ svg{display:block}
 .lens .gl{background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 28%,transparent 72%,rgba(255,255,255,.06))!important;opacity:1!important}
 .tabs.drag .tab:not(.hov){opacity:1}
 .tabs.drag::before{opacity:0!important}
+
+
+/* ============ 上部バーを本家（Files / 翻訳）の実寸に合わせて拡大 ============ */
+.tab{padding:12px 21px;font-size:21px}
+.tab-ic{padding:12px 19px}
+.tab-ic svg{width:32px;height:32px}
+.more-btn{width:58px;height:58px}
+.more-btn svg{width:26px;height:26px}
+#topbar{height:calc(100px + env(safe-area-inset-top))}
+#content{padding-top:calc(88px + env(safe-area-inset-top))}
+#conv{padding-top:calc(86px + env(safe-area-inset-top))!important}
+.lay-tabbar .cam-hint{top:calc(96px + env(safe-area-inset-top))}
+@media (max-width:700px){.tab{padding:11px 13px;font-size:16px}.tab-ic{padding:11px 13px}.tab-ic svg{width:26px;height:26px}.more-btn{width:50px;height:50px}.more-btn svg{width:22px;height:22px}}
+
+/* レンズ内：はみ出しをクリップして Safari のフィルタ基準位置がずれないようにする */
+.lens .lw{overflow:hidden!important;border-radius:inherit}
+
+/* ============ ポップアップが「ぐにょっ」と開くメタボール ============ */
+.goo{position:fixed;z-index:99;pointer-events:none;overflow:hidden;filter:url(#goo);transition:opacity .22s}
+.goo>i{position:absolute;left:0;top:0;background:var(--goo);will-change:transform,width,height,border-radius}
+:root{--goo:#f4f4f8}
+@media (prefers-color-scheme:dark){:root{--goo:#35353a}}
+.pop.opening{transition:opacity .2s}

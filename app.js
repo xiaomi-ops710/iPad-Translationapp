@@ -483,6 +483,43 @@
   }
 
   /* ------------------------------------------------------------- popovers */
+  /* アンカーのボタンから液体のようにふくらんで開く（メタボール＋伸び縮み） */
+  function popLiquid(p, anchor, x, y, pw, ph) {
+    if (reduceMotion() || !p.animate) return;
+    if (!$('#gooSvg')) {
+      const s = document.createElementNS(NS, 'svg');
+      s.id = 'gooSvg'; s.setAttribute('width', '0'); s.setAttribute('height', '0'); s.style.cssText = 'position:absolute;pointer-events:none';
+      s.innerHTML = '<filter id="goo" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/><feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"/></filter>';
+      document.body.appendChild(s);
+    }
+    const r = anchor.getBoundingClientRect(), M = 40;
+    const L = Math.min(r.left, x) - M, T = Math.min(r.top, y) - M;
+    const W = Math.max(r.right, x + pw) + M - L, H = Math.max(r.bottom, y + ph) + M - T;
+    const goo = document.createElement('div'); goo.className = 'goo';
+    goo.style.cssText = `left:${L}px;top:${T}px;width:${W}px;height:${H}px`;
+    const mk = () => { const i = document.createElement('i'); goo.appendChild(i); return i; };
+    const ghost = mk(), blob = mk();
+    const ar = Math.min(r.width, r.height) / 2;
+    const fr = (l, t, w, h, rad) => ({ transform: `translate(${l - L}px,${t - T}px)`, width: w + 'px', height: h + 'px', borderRadius: rad + 'px' });
+    ghost.style.cssText = `width:${r.width}px;height:${r.height}px;border-radius:${ar}px;transform:translate(${r.left - L}px,${r.top - T}px)`;
+    const down = y >= r.top;
+    const cx = Math.min(Math.max(r.left + r.width / 2, x + 30), x + pw - 30);
+    const k = [
+      fr(r.left, r.top, r.width, r.height, ar),
+      { ...fr(cx - pw * 0.22, down ? r.top : y + ph - r.height * 1.7, pw * 0.44, r.height * 1.7, 34), offset: 0.28 },
+      { ...fr(x - pw * 0.025, down ? y : y - ph * 0.04, pw * 1.05, ph * 1.04, 34), offset: 0.66 },
+      { ...fr(x + pw * 0.006, y + ph * 0.004, pw * 0.988, ph * 0.992, 31), offset: 0.84 },
+      fr(x, y, pw, ph, 30)
+    ];
+    document.body.appendChild(goo);
+    p.style.opacity = '0'; p.style.animation = 'none';
+    const a = blob.animate(k, { duration: 640, easing: 'cubic-bezier(.3,.8,.35,1)', fill: 'forwards' });
+    p.animate([{ opacity: 0, transform: 'scale(.94)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'none' }],
+      { duration: 340, delay: 300, easing: 'cubic-bezier(.3,1.2,.45,1)', fill: 'both' });
+    setTimeout(() => { goo.style.opacity = '0'; }, 420);
+    const done = () => { goo.remove(); p.style.opacity = ''; };
+    a.onfinish = done; setTimeout(done, 900);
+  }
   /* 項目を長押し／ホバーすると、薄い楕円が現れて指に追従して滑る */
   function popHighlight(p) {
     const hl = document.createElement('i'); hl.className = 'pop-hl'; p.prepend(hl);
@@ -523,6 +560,7 @@
     if (y + ph > innerHeight - 8) y = r.top > ph + 16 ? r.top - ph - 8 : Math.max(8, innerHeight - ph - 8);
     p.style.left = x + 'px'; p.style.top = y + 'px';
     popHighlight(p);
+    popLiquid(p, anchor, x, y, pw, ph);
     p.style.transformOrigin = `${Math.min(pw, Math.max(0, r.left + r.width / 2 - x))}px ${y > r.top ? '0%' : '100%'}`;
     return p;
   }
@@ -1065,6 +1103,13 @@
     const sk = L.rm ? 0 : Math.max(-9, Math.min(9, -vx / 150));
     L.el.style.transform = `translate(${lx}px,${L.ly}px) scale(${1 + s},${1 - s * 0.62}) skewX(${sk}deg)`;
     L.lc.style.left = -lx + 'px'; L.lc.style.top = -L.ly + 'px';
+    // レンズの下にある本物のタブ文字を隠す（透明なガラス越しに二重に見えないように）
+    const h0 = lx + 7, h1 = lx + L.lw - 7;
+    L.tabs.forEach((tb) => {
+      const a = h0 - tb.offsetLeft, b = h1 - tb.offsetLeft;
+      const m = (L.nomask || b <= 0 || a >= tb.offsetWidth) ? '' : `linear-gradient(90deg,#000 0,#000 ${a}px,transparent ${a}px,transparent ${b}px,#000 ${b}px)`;
+      tb.style.webkitMaskImage = m; tb.style.maskImage = m;
+    });
     L.lc.style.transformOrigin = `${cx}px ${L.bh / 2}px`;
     L.gl.style.setProperty('--gx', (50 - Math.max(-45, Math.min(45, vx / 18))) + '%');
     let h = L.tabs.findIndex((t) => cx >= t.offsetLeft && cx <= t.offsetLeft + t.offsetWidth);
@@ -1118,7 +1163,7 @@
     if (th) { th._x = L.cx - L.tab.offsetWidth / 2; th._y = L.tab.offsetTop; th._w = L.tab.offsetWidth; th._h = L.tab.offsetHeight; th.dataset.i = '1'; }
     L.bar.classList.remove('drag');
     L.tabs.forEach((t) => t.classList.remove('hov'));
-    setTimeout(() => L.el.classList.remove('in'), 140);
+    setTimeout(() => { L.el.classList.remove('in'); L.nomask = true; }, 140);
     setTimeout(() => { L.dead = true; cancelAnimationFrame(L.raf); L.el.remove(); L.svg.remove(); if (L_last === L) L_last = null; }, 620);
     const name = target.dataset.nav;
     nav(name);

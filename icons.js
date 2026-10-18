@@ -19,12 +19,12 @@
       <path fill="currentColor" mask="url(#xi-tm)" d="M764 338H1094A115 115 0 0 1 1209 453V663A115 115 0 0 1 1094 778H1068V846Q1068 866 1056 880Q1043 897 1022 885L881 778H764A115 115 0 0 1 649 663V453A115 115 0 0 1 764 338Z"/>
     </svg>`,
     // camera
-    camera: sv('<path d="M8.4 8H6a2.9 2.9 0 0 0-2.9 2.9v4.8A2.9 2.9 0 0 0 6 18.6h12a2.9 2.9 0 0 0 2.9-2.9v-4.8A2.9 2.9 0 0 0 18 8h-2.4l-1-1.6a1.3 1.3 0 0 0-1.1-.6h-3a1.3 1.3 0 0 0-1.1.6z"/><circle cx="12" cy="13.3" r="3.1"/><circle cx="17.7" cy="10.6" r=".75" fill="currentColor" stroke="none"/>', { sw: 1.45 }),
+    camera: `<svg viewBox="89.4 58.9 35.8 35.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M99.2 70.9H97.6a4.1 4.1 0 0 0-4.1 4.1v7.7a4.1 4.1 0 0 0 4.1 4.1h19.2a4.1 4.1 0 0 0 4.1-4.1v-7.7a4.1 4.1 0 0 0-4.1-4.1h-2.4l-1.7-3a1.9 1.9 0 0 0-1.6-1h-6.8a1.9 1.9 0 0 0-1.6 1l-1.7 3z" transform="translate(.3 .3)"/><circle cx="107.3" cy="78.1" r="5.1"/><circle cx="116.3" cy="73.4" r="1.2" fill="currentColor" stroke="none"/></svg>`,
     // person.2
-    people: sv('<circle cx="9.1" cy="8.2" r="3.3"/><path d="M3.1 19.4v-.5c0-2.9 2.6-4.9 6-4.9s6 2 6 4.9v.5c0 .3-.2.5-.5.5H3.6c-.3 0-.5-.2-.5-.5z"/><path d="M15.2 5.1a3.1 3.1 0 1 1 .9 5.9"/><path d="M17.3 14.2c2.4.3 4.2 1.9 4.2 4.4v.3c0 .3-.2.5-.5.5h-2.4"/>', { sw: 1.6 }),
+    people: `<svg viewBox="46.7 219 44 44" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="59.1" cy="235" rx="4.3" ry="5"/><ellipse cx="75.9" cy="233.6" rx="4.7" ry="5.4"/><path d="M62.2 253H53.2a3.2 3.2 0 0 1-2.6-5.2C52.6 246 55.7 244.9 59.4 244.9c1.5 0 2.8.2 4 .6"/><path d="M67.4 253H83.9a3.2 3.2 0 0 0 2.5-5.2C83.9 246 80.4 245 75.9 245s-8 1-10.5 2.8a3.2 3.2 0 0 0 2 5.2z"/></svg>`,
     // star / star.fill
-    starO: sv('<path d="M12 3.4l2.5 5.3 5.8.8-4.2 4.1 1 5.8-5.1-2.8-5.1 2.8 1-5.8-4.2-4.1 5.8-.8z"/>', { sw: 1.6 }),
-    star: sv('<path d="M12 3.4l2.5 5.3 5.8.8-4.2 4.1 1 5.8-5.1-2.8-5.1 2.8 1-5.8-4.2-4.1 5.8-.8z"/>', { sw: 1.6 }),
+    starO: `<svg viewBox="46.3 352.5 44 44" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="68.30,360.70 72.41,369.34 81.90,370.58 74.96,377.16 76.71,386.57 68.30,382.00 59.89,386.57 61.64,377.16 54.70,370.58 64.19,369.34"/></svg>`,
+    star: `<svg viewBox="46.3 352.5 44 44" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="68.30,360.70 72.41,369.34 81.90,370.58 74.96,377.16 76.71,386.57 68.30,382.00 59.89,386.57 61.64,377.16 54.70,370.58 64.19,369.34"/></svg>`,
     // arrow.up.left.and.arrow.down.right
     expand: sv('<path d="M4.2 9.4V4.2h5.2M4.4 4.4l6.4 6.4M19.8 14.6v5.2h-5.2M19.6 19.6l-6.4-6.4"/>', { sw: 1.6 }),
     // doc.on.doc
@@ -36,15 +36,15 @@
     // arrow.left.arrow.right
     swap: sv('<path d="M4.4 8.2h15.2M16 4.6l3.6 3.6-3.6 3.6M19.6 15.8H4.4M8 12.2l-3.6 3.6L8 19.4"/>', { sw: 1.7 }),
     // chevron.down
-    chev: sv('<path d="M5.8 9.4l6.2 6.2 6.2-6.2"/>', { sw: 2.4 }),
+    chev: `<svg viewBox="304.4 301.5 28 28" fill="none" stroke="currentColor" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M311.5 312.5L318.5 318.6L325.4 311.6"/></svg>`,
     // chevron.up.chevron.down
     updown: sv('<path d="M8 9.6l4-4 4 4M8 14.4l4 4 4-4"/>', { sw: 2.6 }),
     // xmark.circle.fill
     clear: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#b4b4b9"/><path d="M8.4 8.4l7.2 7.2M15.6 8.4l-7.2 7.2" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`,
     // macwindow（サイドバーを隠す）
-    window: sv('<rect x="3.1" y="5" width="17.8" height="14.3" rx="2" /><path d="M8 7.8h8.2" stroke-width="1.25"/>', { sw: 1.45 }),
+    window: `<svg viewBox="49.7 33.8 51.4 51.4" fill="none" stroke="currentColor" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="57.6" y="44.6" width="35.5" height="29.9" rx="3"/><path d="M67.8 50H83.3" stroke-width="2.3"/></svg>`,
     // sidebar.left（タブバー左端）
-    sidebar: sv('<rect x="3.1" y="5.45" width="17.8" height="13.1" rx="2.4"/><path d="M9.1 5.6v12.8"/><path d="M4.8 8.8h2.2M4.8 11.1h2.2M4.8 13.4h2.2" stroke-width="1.15"/>', { sw: 1.45 }),
+    sidebar: `<svg viewBox="61.3 30.5 51.4 51.4" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="69.6" y="42.7" width="34.8" height="27" rx="3.6"/><path d="M82.9 42.7V69.7"/><path d="M74.4 49.2H76.9M74.4 53.7H76.9M74.4 58.1H76.9" stroke-width="2"/></svg>`,
     // ellipsis
     more: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.2" cy="12" r="1.85"/><circle cx="12" cy="12" r="1.85"/><circle cx="18.8" cy="12" r="1.85"/></svg>`,
     // photo.on.rectangle
