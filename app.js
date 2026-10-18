@@ -1437,8 +1437,9 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       case 'st:mode': a.mode = el.dataset.v; save(); applyAppearance(); renderSettings(); break;
       case 'st:tg': {
         const k = el.dataset.k;
-        if (k === 'auto') a.mode = a.mode === 'auto' ? effTheme() : 'auto'; else a[k] = !a[k];
-        save(); applyAppearance(); renderSettings(); break;
+        if (k === 'auto') { a.mode = a.mode === 'auto' ? effTheme() : 'auto'; save(); applyAppearance(); renderSettings(); }
+        else { a[k] = !a[k]; el.classList.toggle('on', !!a[k]); el.setAttribute('aria-checked', String(!!a[k])); save(); applyAppearance(); }
+        break;
       }
       default: break;
     }
@@ -1464,6 +1465,10 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   document.addEventListener('pointermove', (e) => { if (slDrag) slSet(slDrag, e.clientX); });
   const slEnd = () => { if (!slDrag) return; slDrag.classList.remove('drag'); slDrag = null; save(); };
   document.addEventListener('pointerup', slEnd); document.addEventListener('pointercancel', slEnd);
+  /* スイッチ：押している間 Liquid Glass のレンズを表示 */
+  document.addEventListener('pointerdown', (e) => { const s = e.target.closest && e.target.closest('.st-sw'); if (s) s.classList.add('press'); });
+  const swUp = () => $$('.st-sw.press').forEach((s) => setTimeout(() => s.classList.remove('press'), 140));
+  document.addEventListener('pointerup', swUp); document.addEventListener('pointercancel', swUp);
 
   /* ----------------------------------------------------------------- events */
   function nav(name, pair) {
