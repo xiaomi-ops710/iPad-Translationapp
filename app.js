@@ -1017,7 +1017,7 @@
       });
       if (!r.ok) {
         const tx = await r.text().catch(() => '');
-        if (r.status === 400 && useSchema && /schema|propertyOrdering|responseSchema/i.test(tx)) { useSchema = false; continue; }
+        if (r.status === 400 && useSchema && /schema|propertyOrdering|responseSchema|minItems|maxItems/i.test(tx)) { useSchema = false; continue; }
         if (r.status === 400 && mode < 3 && /think/i.test(tx)) { mode++; continue; }
         throw new Error(`${r.status} ${tx.slice(0, 120)}`);
       }
@@ -1027,6 +1027,17 @@
       return parts.filter((x) => !x.thought).map((x) => x.text || '').join('');
     }
   }
+  function jloose(txt) {
+    txt = (txt || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    let v = null;
+    try { v = JSON.parse(txt); } catch (e) {
+      const i = txt.lastIndexOf('}');
+      if (i > 0) { try { v = JSON.parse(txt.slice(0, i + 1).replace(/,\s*$/, '') + (txt.startsWith('[') ? ']' : '')); } catch (e2) { v = null; } }
+    }
+    if (v && !Array.isArray(v) && typeof v === 'object') { const a = Object.values(v).find(Array.isArray); v = a || [v]; }
+    return Array.isArray(v) ? v : [];
+  }
+  const normWord = (v) => (v && typeof v === 'object' ? { w: String(v.w || v.word || v.english || '').trim(), pos: v.pos || v.partOfSpeech || '', m: v.m || v.meaning || v.ja || '', ex: v.ex || v.example || '', exj: v.exj || v.example_ja || v.exampleJa || '' } : null);
   const jparse = (txt) => { try { return JSON.parse((txt || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()); } catch (e) { return null; } };
 
   /* ---------------- チャット（保存）---------------- */
@@ -1121,8 +1132,8 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     SR.adding = true; toast('単語を抽出しています…');
     try {
       const txt = await aiGenerate([{ role: 'user', parts: [{ text: `From the following English-learning explanation, pick up to 6 English words or phrases worth memorising for a ${lvName(SIRI_SETTINGS().lv)} learner. Return JSON array of {w (English base form), pos (Japanese part of speech), m (Japanese meaning), ex (short English example), exj (Japanese translation of the example)}.\n\n${msg.t}` }] }], { json: true, schema: VOCAB_SCHEMA, temp: 0.2, think: 'low', max: 2048 });
-      const arr = jparse(txt) || []; let n = 0;
-      arr.forEach((v) => { if (v && v.w && addVocab(v)) n++; });
+      const arr = jloose(txt).map(normWord).filter((v) => v && v.w); let n = 0;
+      arr.forEach((v) => { if (addVocab(v)) n++; });
       toast(n ? `${n}語を単語帳に追加しました` : '追加できる新しい単語がありませんでした');
     } catch (e) { toast('抽出できませんでした'); }
     SR.adding = false;
@@ -1142,7 +1153,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     if (hasAI()) {
       try {
         const txt = await aiGenerate([{ role: 'user', parts: [{ text: `The learner entered "${w}" for their English vocabulary notebook (it may be an English word/phrase or a Japanese word). Return a JSON array with ONE object: w (the English headword or phrase in base form), pos (Japanese part of speech such as 名詞/動詞/形容詞), m (concise Japanese meaning, up to 3 senses), ex (one natural English example sentence, CEFR B1 or simpler), exj (Japanese translation of the example).` }] }], { json: true, schema: VOCAB_SCHEMA, temp: 0.2, think: 'low', max: 1024 });
-        const a = jparse(txt); if (a && a[0] && a[0].w) item = a[0];
+        const a = jloose(txt).map(normWord).filter((v) => v && v.w); if (a[0]) item = a[0];
       } catch (e) { toast('AI で補完できませんでした（そのまま追加します）'); }
     }
     const ok = addVocab(item);
@@ -1215,7 +1226,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       <div class="av-seg">${seg}</div>
       <div class="av-h">自動で追加</div>
       <div class="av-group"><button class="av-r nav" data-act="s:vlv"><span>難易度</span><em>${esc(lvName(st.lv))}</em>${I.chevR}</button><button class="av-r nav" data-act="s:vn"><span>追加する語数</span><em>${st.vn || 10}語</em>${I.chevR}</button>
-        <button class="av-r act" data-act="s:vgen" ${SR.adding ? 'disabled' : ''}>${SR.adding ? '<i class="mini-spin"></i>生成しています…' : '難易度に合わせて単語を自動生成'}</button></div>
+        <button class="av-r act" data-act="s:vgen" ${SR.adding ? 'disabled' : ''}>${SR.adding ? `<i class="mini-spin"></i>生成しています… ${SR.vprog || 0} / ${st.vn || 10}語` : '難易度に合わせて単語を自動生成'}</button></div>
       <p class="av-cap">選んだ難易度（${esc(lvName(st.lv))}）に合う単語・熟語を、意味と例文つきで Siri が追加します。</p>
       <div class="av-h">単語</div>
       <div class="av-group"><label class="av-r add"><span class="plus">＋</span><input data-sk="vadd" placeholder="新しい単語（日本語でもOK）" value="${esc(SR.vadd)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="av-addbtn" data-act="s:vaddgo" ${SR.adding ? 'disabled' : ''}>追加</button></label>
@@ -1232,15 +1243,27 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   async function vocabGenerate() {
     if (!hasAI()) { toast('Siri を使うには Gemini の API キーが必要です'); openSheet(); return; }
     if (SR.adding) return;
-    const st = SIRI_SETTINGS(), n = st.vn || 10, have = (S.vocab || []).map((v) => v.w.toLowerCase());
-    SR.adding = true; siriRender(true);
+    const st = SIRI_SETTINGS(), target = st.vn || 10;
+    let added = 0, misses = 0, tries = 0, lastErr = '';
+    SR.adding = true; SR.vprog = 0; siriRender(true);
     try {
-      const txt = await aiGenerate([{ role: 'user', parts: [{ text: `Create ${n} English vocabulary items (single words or common phrases) that a ${lvName(st.lv)} learner should study (${lvOf(st.lv).hint}). Choose useful, frequent items for exactly that level, mixing parts of speech. Do NOT include any of these already-saved items: ${have.slice(0, 150).join(', ') || '(none)'}. Return a JSON array of {w (English), pos (Japanese part of speech), m (concise Japanese meaning), ex (one natural English example sentence at the level), exj (Japanese translation of the example)}. Variation seed: ${Math.random().toString(36).slice(2, 8)}.` }] }], { json: true, schema: VOCAB_SCHEMA, temp: 0.9, think: 'low', max: 8192 });
-      const arr = jparse(txt) || []; let c = 0;
-      arr.forEach((v) => { if (v && v.w && addVocab(v)) c++; });
-      toast(c ? `${lvName(st.lv)}の単語を${c}語追加しました` : '新しい単語を追加できませんでした');
-    } catch (e) { toast('単語を生成できませんでした：' + String(e.message || e).slice(0, 60)); }
-    SR.adding = false; siriRender(true);
+      while (added < target && tries < 6 && misses < 2) {
+        tries++;
+        const need = Math.min(target - added, 12), have = (S.vocab || []).map((v) => v.w.toLowerCase());
+        const schema = { type: 'ARRAY', minItems: need, maxItems: need, items: VOCAB_SCHEMA.items };
+        const txt = await aiGenerate([{ role: 'user', parts: [{ text: `Create EXACTLY ${need} English vocabulary items (single words or common phrases) that a ${lvName(st.lv)} learner should study (${lvOf(st.lv).hint}). Choose useful, frequent items for exactly that level, mixing parts of speech. Do NOT include any of these already-saved items: ${have.slice(-200).join(', ') || '(none)'}. Return a JSON array of exactly ${need} objects with keys: w (English), pos (Japanese part of speech), m (concise Japanese meaning), ex (one natural English example sentence at the level), exj (Japanese translation of the example). Variation seed: ${Math.random().toString(36).slice(2, 8)}.` }] }], { json: true, schema, temp: 0.9, think: 'low', max: 8192 });
+        const arr = jloose(txt).map(normWord).filter((v) => v && v.w);
+        let c = 0; for (const v of arr) { if (added + c >= target) break; if (addVocab(v)) c++; }
+        added += c; SR.vprog = added; misses = c === 0 ? misses + 1 : 0;
+        if (!arr.length) lastErr = '応答を解析できませんでした';
+        siriRender(true);
+      }
+    } catch (e) { lastErr = String((e && e.message) || e).slice(0, 80); }
+    SR.adding = false;
+    if (added >= target) toast(`${lvName(st.lv)}の単語を${added}語追加しました`);
+    else if (added > 0) toast(`${added}語を追加しました（目標${target}語。もう一度押すと続きを追加します）`);
+    else toast('単語を追加できませんでした' + (lastErr ? '：' + lastErr : ''));
+    siriRender(true);
   }
   function studyHTML() {
     const s = SR.study, byId = (id) => (S.vocab || []).find((v) => v.id === id);
@@ -1401,7 +1424,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   function settingsPage(p) {
     const a = AP();
     if (p === 'root') {
-      return { t: '設定', h: `<div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
+      return { t: '設定', h: `<div class="st-appicon">${I.gearApp}</div><div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
         <div class="st-grp"><button class="st-row nav" data-act="st:ai"><span>AI翻訳（Gemini）</span><em>${hasAI() ? esc(AI().model) : '未設定'}</em>${chevR}</button></div>
         <p class="st-cap">Siri・カメラ翻訳・翻訳の高速化に Gemini を使います。</p>
         <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.0</em></div></div>` };

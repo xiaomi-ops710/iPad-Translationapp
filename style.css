@@ -902,3 +902,6 @@ html.rm .st-sw i,html.rm .st-sw i::after{transition-duration:.01s}
 .sprog{height:8px}
 .sprog i{box-shadow:0 0 10px rgba(108,195,221,.7)}
 .phone .flash{height:300px}
+
+.st-appicon{display:grid;place-items:center;margin:2px 0 22px}.st-appicon svg{width:96px;height:96px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.4))}
+.pop-item .pi svg path[fill-rule]{stroke-width:7}
