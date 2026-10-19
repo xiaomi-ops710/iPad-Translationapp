@@ -498,42 +498,23 @@
   }
 
   /* ------------------------------------------------------------- popovers */
-  /* アンカーのボタンから液体のようにふくらんで開く（メタボール＋伸び縮み） */
+  /* ボタンの位置からぐにょっとふくらんで開く（本物のガラスのまま変形）。項目は少しずつ遅れて現れる */
   function popLiquid(p, anchor, x, y, pw, ph) {
+    p.classList.toggle('has-ic', !!p.querySelector('.pi'));
     if (reduceMotion() || !p.animate) return;
-    if (!$('#gooSvg')) {
-      const s = document.createElementNS(NS, 'svg');
-      s.id = 'gooSvg'; s.setAttribute('width', '0'); s.setAttribute('height', '0'); s.style.cssText = 'position:absolute;pointer-events:none';
-      s.innerHTML = '<filter id="goo" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/><feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11"/></filter>';
-      document.body.appendChild(s);
-    }
-    const r = anchor.getBoundingClientRect(), M = 40;
-    const L = Math.min(r.left, x) - M, T = Math.min(r.top, y) - M;
-    const W = Math.max(r.right, x + pw) + M - L, H = Math.max(r.bottom, y + ph) + M - T;
-    const goo = document.createElement('div'); goo.className = 'goo';
-    goo.style.cssText = `left:${L}px;top:${T}px;width:${W}px;height:${H}px`;
-    const mk = () => { const i = document.createElement('i'); goo.appendChild(i); return i; };
-    const ghost = mk(), blob = mk();
-    const ar = Math.min(r.width, r.height) / 2;
-    const fr = (l, t, w, h, rad) => ({ transform: `translate(${l - L}px,${t - T}px)`, width: w + 'px', height: h + 'px', borderRadius: rad + 'px' });
-    ghost.style.cssText = `width:${r.width}px;height:${r.height}px;border-radius:${ar}px;transform:translate(${r.left - L}px,${r.top - T}px)`;
-    const down = y >= r.top;
-    const cx = Math.min(Math.max(r.left + r.width / 2, x + 30), x + pw - 30);
-    const k = [
-      fr(r.left, r.top, r.width, r.height, ar),
-      { ...fr(cx - pw * 0.22, down ? r.top : y + ph - r.height * 1.7, pw * 0.44, r.height * 1.7, 34), offset: 0.28 },
-      { ...fr(x - pw * 0.025, down ? y : y - ph * 0.04, pw * 1.05, ph * 1.04, 34), offset: 0.66 },
-      { ...fr(x + pw * 0.006, y + ph * 0.004, pw * 0.988, ph * 0.992, 31), offset: 0.84 },
-      fr(x, y, pw, ph, 30)
-    ];
-    document.body.appendChild(goo);
-    p.style.opacity = '0'; p.style.animation = 'none';
-    const a = blob.animate(k, { duration: 640, easing: 'cubic-bezier(.3,.8,.35,1)', fill: 'forwards' });
-    p.animate([{ opacity: 0, transform: 'scale(.94)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'none' }],
-      { duration: 340, delay: 300, easing: 'cubic-bezier(.3,1.2,.45,1)', fill: 'both' });
-    setTimeout(() => { goo.style.opacity = '0'; }, 420);
-    const done = () => { goo.remove(); p.style.opacity = ''; };
-    a.onfinish = done; setTimeout(done, 900);
+    const r = anchor.getBoundingClientRect();
+    const ox = Math.min(pw, Math.max(0, r.left + r.width / 2 - x)), oy = Math.min(ph, Math.max(0, r.top + r.height / 2 - y));
+    p.style.animation = 'none'; p.style.transformOrigin = `${ox}px ${oy}px`;
+    p.animate([
+      { opacity: 0, transform: 'scale(.1,.08)', filter: 'blur(8px)' },
+      { opacity: 1, transform: 'scale(.55,.34)', filter: 'blur(4px)', offset: 0.2 },
+      { transform: 'scale(1.05,1.09)', filter: 'blur(0px)', offset: 0.58 },
+      { transform: 'scale(.99,.985)', offset: 0.8 },
+      { opacity: 1, transform: 'scale(1,1)', filter: 'blur(0px)' }
+    ], { duration: 620, easing: 'cubic-bezier(.3,.85,.35,1)', fill: 'both' });
+    $$('.pop-item,.pop-h,.pop-sep', p).forEach((el, i) => {
+      el.animate([{ opacity: 0, transform: 'translateY(-10px) scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 380, delay: 170 + i * 26, easing: 'cubic-bezier(.3,1.25,.4,1)', fill: 'both' });
+    });
   }
   /* 項目を長押し／ホバーすると、薄い楕円が現れて指に追従して滑る */
   function popHighlight(p) {
@@ -562,7 +543,14 @@
     p.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') show(null); });
   }
   let popCb = null;
-  function closePop() { const p = $('#pop'); if (p) p.remove(); popCb = null; }
+  function closePop() {
+    const p = $('#pop'); popCb = null; if (!p) return;
+    p.removeAttribute('id'); p.style.pointerEvents = 'none';
+    if (reduceMotion() || !p.animate) { p.remove(); return; }
+    const a = p.animate([{ opacity: 1, transform: 'scale(1,1)', filter: 'blur(0px)' }, { opacity: 0.9, transform: 'scale(.9,.8)', filter: 'blur(1px)', offset: 0.4 }, { opacity: 0, transform: 'scale(.14,.1)', filter: 'blur(8px)' }], { duration: 260, easing: 'cubic-bezier(.5,.05,.85,.4)', fill: 'forwards' });
+    $$('.pop-item,.pop-h,.pop-sep', p).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }));
+    a.onfinish = () => p.remove(); setTimeout(() => p.remove(), 500);
+  }
   function showPop(anchor, html, o = {}) {
     closePop();
     const p = document.createElement('div');
@@ -576,7 +564,6 @@
     p.style.left = x + 'px'; p.style.top = y + 'px';
     popHighlight(p);
     popLiquid(p, anchor, x, y, pw, ph);
-    p.style.transformOrigin = `${Math.min(pw, Math.max(0, r.left + r.width / 2 - x))}px ${y > r.top ? '0%' : '100%'}`;
     return p;
   }
   function langMenu(anchor, side, afterPick) {
@@ -1304,8 +1291,8 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   }
   function plusMenu(el) {
     const st = SIRI_SETTINGS();
-    const html = `<button class="pop-item" data-pick="qr">リーディング問題を作成</button><button class="pop-item" data-pick="ql">リスニング問題を作成</button><div class="pop-sep"></div>
-      <button class="pop-item" data-pick="lv"><span>難易度<span class="sub">${esc(lvName(st.lv))}</span></span></button><button class="pop-item" data-pick="n"><span>問題数<span class="sub">${st.n}問</span></span></button><div class="pop-sep"></div><button class="pop-item" data-pick="vocab">単語帳</button>`;
+    const html = `<button class="pop-item" data-pick="qr"><i class="pi">${I.book}</i>リーディング問題を作成</button><button class="pop-item" data-pick="ql"><i class="pi">${I.headphones}</i>リスニング問題を作成</button><div class="pop-sep"></div>
+      <button class="pop-item" data-pick="lv"><i class="pi">${I.filter}</i><span>難易度<span class="sub">${esc(lvName(st.lv))}</span></span></button><button class="pop-item" data-pick="n"><i class="pi">${I.list}</i><span>問題数<span class="sub">${st.n}問</span></span></button><div class="pop-sep"></div><button class="pop-item" data-pick="vocab"><i class="pi">${I.vbook}</i>単語帳</button>`;
     showPop(el, html, { align: 'left' });
     popCb = (k) => {
       if (k === 'qr') siriGen('reading'); else if (k === 'ql') siriGen('listening');
@@ -1637,10 +1624,10 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   }
   function moreMenu(el) {
     const ck = (on) => (on ? `<span class="ck">${I.check}</span>` : '');
-    const aiItem = `<button class="pop-item" data-pick="ai"><span>AI翻訳の設定…<span class="sub">${hasAI() ? esc(AI().model) + ' で翻訳中' : '未設定（標準翻訳）'}</span></span></button><button class="pop-item" data-pick="set">設定…</button>`;
+    const aiItem = `<button class="pop-item" data-pick="ai"><i class="pi">${I.sparkle}</i><span>AI翻訳の設定…<span class="sub">${hasAI() ? esc(AI().model) + ' で翻訳中' : '未設定（標準翻訳）'}</span></span></button><button class="pop-item" data-pick="set"><i class="pi">${I.gear}</i>設定…</button>`;
     let html, cb;
     if (!conv.open && view === 'siri') {
-      html = `${aiItem}<div class="pop-sep"></div>${curChat() ? '<button class="pop-item danger" data-pick="dc">このチャットを削除</button>' : ''}<button class="pop-item danger" data-pick="da">すべてのチャットを削除</button><button class="pop-item danger" data-pick="vc">単語帳を空にする</button>`;
+      html = `${aiItem}<div class="pop-sep"></div>${curChat() ? '<button class="pop-item danger" data-pick="dc"><i class="pi">${I.trash}</i>このチャットを削除</button>' : ''}<button class="pop-item danger" data-pick="da"><i class="pi">${I.trash}</i>すべてのチャットを削除</button><button class="pop-item danger" data-pick="vc"><i class="pi">${I.trash}</i>単語帳を空にする</button>`;
       cb = (k) => {
         if (k === 'ai') openSheet();
         if (k === 'dc') { const c = curChat(); if (c && confirm('このチャットを削除しますか？')) { S.chats = chatsOf().filter((x) => x !== c); SR.cur = null; SR.pane = isPhone() ? 'list' : 'chat'; save(); siriRender(); } }
@@ -1648,10 +1635,10 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
         if (k === 'vc') { if (confirm('単語帳の単語をすべて削除しますか？')) { S.vocab = []; save(); SR.study = null; siriRender(); } }
       };
     } else if (conv.open) {
-      html = `${aiItem}<div class="pop-sep"></div><button class="pop-item" data-pick="cs">${ck(S.convSpeak)}翻訳を自動再生</button><button class="pop-item danger" data-pick="cc">会話を消去</button>`;
+      html = `${aiItem}<div class="pop-sep"></div><button class="pop-item" data-pick="cs">${ck(S.convSpeak)}<i class="pi">${I.speaker}</i>翻訳を自動再生</button><button class="pop-item danger" data-pick="cc"><i class="pi">${I.trash}</i>会話を消去</button>`;
       cb = (k) => { if (k === 'ai') openSheet(); if (k === 'cs') { S.convSpeak = !S.convSpeak; save(); } if (k === 'cc') { conv.msgs = []; renderConv(); } };
     } else {
-      html = `${aiItem}<div class="pop-sep"></div><button class="pop-item" data-pick="sp">${ck(S.speak)}翻訳を自動再生</button><button class="pop-item" data-pick="det">${ck(S.detect)}言語を自動検出</button><button class="pop-item danger" data-pick="clr">履歴を消去</button>`;
+      html = `${aiItem}<div class="pop-sep"></div><button class="pop-item" data-pick="sp">${ck(S.speak)}<i class="pi">${I.speaker}</i>翻訳を自動再生</button><button class="pop-item" data-pick="det">${ck(S.detect)}<i class="pi">${I.detect}</i>言語を自動検出</button><button class="pop-item danger" data-pick="clr"><i class="pi">${I.trash}</i>履歴を消去</button>`;
       cb = (k) => {
         if (k === 'ai') openSheet();
         if (k === 'sp') { S.speak = !S.speak; save(); }
