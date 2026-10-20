@@ -300,10 +300,11 @@
     const uw = Math.max(px + pw, nx + nw) - ux, uh = Math.max(py + ph, ny + nh) - uy;
     const horiz = Math.abs(nx - px) >= Math.abs(ny - py);
     const f = (x, y, w, h) => ({ transform: `translate(${x}px,${y}px)`, width: w + 'px', height: h + 'px' });
-    const mid = horiz ? f(ux, ny + nh * 0.05, uw + 6, nh * 0.9) : f(nx + nw * 0.03, uy, nw * 0.94, uh + 6);
+    const mid = horiz ? f(ux - 4, ny + nh * 0.09, uw + 8, nh * 0.82) : f(nx + nw * 0.06, uy - 4, nw * 0.88, uh + 8);
     const over = horiz ? f(nx - (nx - px) * 0.04, ny - nh * 0.02, nw * 1.05, nh * 1.04) : f(nx - nw * 0.02, ny - (ny - py) * 0.04, nw * 1.04, nh * 1.05);
     th.getAnimations().forEach((a) => a.cancel());
-    th.animate([f(px, py, pw, ph), { ...mid, offset: 0.38 }, { ...over, offset: 0.72 }, f(nx, ny, nw, nh)], { duration: 680, easing: 'cubic-bezier(.3,.9,.35,1)' });
+    th.animate([f(px, py, pw, ph), { ...mid, offset: 0.34 }, { ...over, offset: 0.7 }, f(nx, ny, nw, nh)], { duration: 760, easing: 'cubic-bezier(.3,.9,.35,1)' });
+    th.classList.remove('settle'); void th.offsetWidth; th.classList.add('settle'); setTimeout(() => th.classList.remove('settle'), 900);
   }
   function updateThumbs() {
     place($('#tthumb'), $('#tabs .tab.on'));
@@ -328,10 +329,11 @@
     const sig = S.favOpen + '|' + pairs.join(',');
     if (sig !== sbSig) { sbSig = sig; $('#sbin').innerHTML = sidebarInner(pairs); }
     const k = activeKey();
-    $$('#tabs .tab[data-nav]').forEach((b) => b.classList.toggle('on', b.dataset.nav === (conv.open ? 'conversation' : view)));
+    $$('#tabs .tab[data-nav]').forEach((b) => { const on = b.dataset.nav === (conv.open ? 'conversation' : view); const was = b.classList.contains('on'); b.classList.toggle('on', on); if (on && !was && ready) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 700); } });
     $$('#sblist .sb-item').forEach((b) => b.classList.toggle('on', b.dataset.key === k));
     updateThumbs();
   }
+  let viewDir = 1;
   function renderContent(anim) {
     const c = $('#content');
     const prevView = c.dataset.v, prevScroll = c.scrollTop;
@@ -339,7 +341,7 @@
     c.innerHTML = contentHTML();
     if (doSpin) { const sw = $('.swap', c); if (sw) sw.classList.add('spin'); doSpin = false; }
     c.classList.remove('enter');
-    if (anim) { void c.offsetWidth; c.classList.add('enter'); }
+    if (anim) { c.style.setProperty('--vx', viewDir * 56 + 'px'); void c.offsetWidth; c.classList.add('enter'); }
     if (view !== 'camera') stopCam();
     if (view === 'translate') {
       bindLive(); syncLive();
@@ -1528,6 +1530,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     const wasConv = conv.open;
     if (wasConv) closeConv();
     if (!wasConv && name === view && (name !== 'fav' || (pair || null) === favFilter)) return;
+    { const ord = ['translate', 'camera', 'conversation', 'siri', 'fav']; viewDir = Math.sign(ord.indexOf(name) - ord.indexOf(view)) || 1; }
     view = name; favFilter = name === 'fav' ? (pair || null) : null; render({ anim: true });
   }
   const itemOf = (el) => { const c = el.closest('[data-id]'); return c ? S.history.find((h) => String(h.id) === c.dataset.id) : null; };
@@ -1761,6 +1764,11 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     applyLens(L.x, 0);
     void el.offsetWidth;
     el.classList.add('in');
+    if (!L.rm && el.animate) { // 選択中の楕円から、ガラスがぷくっと膨らんで現れる
+      const rx = act.offsetWidth / L.lw, ry = act.offsetHeight / L.lh;
+      el.animate([{ scale: `${rx} ${ry}`, opacity: 0.2 }, { scale: '1.16 1.24', opacity: 1, offset: 0.5 }, { scale: '.97 .96', offset: 0.78 }, { scale: '1 1', opacity: 1 }], { duration: 560, easing: 'cubic-bezier(.3,.9,.35,1)' });
+      L.lc.animate([{ opacity: 0, filter: 'blur(7px)' }, { opacity: 1, filter: 'blur(0px)' }], { duration: 340, delay: 70, fill: 'backwards' });
+    }
     L.raf = requestAnimationFrame(stepLens);
   }
   /* 位置と速度から「ぷるん」と伸び縮みするガラスの形を決める */
@@ -1850,10 +1858,13 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       L.nomask = true;
       if (L.rm || !L.el.animate) { L.el.classList.remove('in'); return; }
       const rx = target.offsetWidth / L.lw, ry = target.offsetHeight / L.lh;
-      L.el.animate([{ scale: '1 1', opacity: 1 }, { scale: `${rx * 1.1} ${ry * 1.16}`, opacity: 0.95, offset: 0.5 }, { scale: `${rx} ${ry}`, opacity: 0 }], { duration: 480, easing: 'cubic-bezier(.3,.9,.3,1)', fill: 'forwards' });
-      L.lc.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, fill: 'forwards' });
+      L.el.animate([{ scale: '1 1', opacity: 1 }, { scale: `${rx * 1.24} ${ry * 1.34}`, opacity: 1, offset: 0.34 }, { scale: `${rx * 0.93} ${ry * 0.88}`, opacity: 0.92, offset: 0.66 }, { scale: `${rx} ${ry}`, opacity: 0 }], { duration: 680, easing: 'cubic-bezier(.3,.9,.3,1)', fill: 'forwards' });
+      L.lc.animate([{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(5px)' }], { duration: 300, fill: 'forwards' });
+      const th = $('#tthumb'); if (th) { th.classList.remove('settle'); void th.offsetWidth; th.classList.add('settle'); setTimeout(() => th.classList.remove('settle'), 900); }
+      if (L.bar.animate) L.bar.animate([{ scale: '1 1' }, { scale: '1.014 .986' }, { scale: '.998 1.004' }, { scale: '1 1' }], { duration: 560, easing: 'cubic-bezier(.3,1.3,.4,1)' });
+      target.classList.remove('pop'); void target.offsetWidth; target.classList.add('pop'); setTimeout(() => target.classList.remove('pop'), 700);
     }, 170);
-    setTimeout(() => { L.dead = true; cancelAnimationFrame(L.raf); L.el.remove(); L.svg.remove(); if (L_last === L) L_last = null; }, 760);
+    setTimeout(() => { L.dead = true; cancelAnimationFrame(L.raf); L.el.remove(); L.svg.remove(); if (L_last === L) L_last = null; }, 960);
     const name = target.dataset.nav;
     nav(name);
     updateThumbs();

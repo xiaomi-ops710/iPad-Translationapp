@@ -905,3 +905,49 @@ html.rm .st-sw i,html.rm .st-sw i::after{transition-duration:.01s}
 
 .st-appicon{display:grid;place-items:center;margin:2px 0 22px}.st-appicon svg{width:96px;height:96px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.4))}
 .pop-item .pi svg path[fill-rule]{stroke-width:7}
+
+
+/* ======================================================================
+   アニメーション強化：画面遷移・タブ・ボタン・カード・シート
+   ====================================================================== */
+@keyframes viewSlide{0%{opacity:0;transform:translateX(var(--vx,0)) scale(.965);filter:blur(10px)}60%{opacity:1;filter:blur(0)}100%{opacity:1;transform:none;filter:none}}
+#content.enter>*{animation:viewSlide .7s cubic-bezier(.22,1.05,.36,1) both}
+#content.enter>*:nth-child(2){animation-delay:.05s}#content.enter>*:nth-child(3){animation-delay:.1s}#content.enter>*:nth-child(4){animation-delay:.15s}
+.sr-card{animation:cardIn .55s var(--spring) both}
+.sr-card:nth-child(2){animation-delay:.04s}.sr-card:nth-child(3){animation-delay:.08s}.sr-card:nth-child(4){animation-delay:.12s}.sr-card:nth-child(5){animation-delay:.16s}.sr-card:nth-child(n+6){animation-delay:.2s}
+.sr-card:active{scale:.96}
+@keyframes msgR{from{opacity:0;transform:translateX(28px) scale(.9);transform-origin:100% 100%}to{opacity:1;transform:none}}
+@keyframes msgL{from{opacity:0;transform:translateY(14px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+.m-u>div{animation:msgR .5s var(--spring) both}
+.m-a{animation:msgL .6s var(--spring) both}
+.m-z .siri-card{animation:cardIn .6s var(--spring) both}.m-z .siri-card:nth-child(3){animation-delay:.06s}.m-z .siri-card:nth-child(4){animation-delay:.12s}
+.av-r.word{animation:cardIn .5s var(--spring) both}
+.av-r.word:nth-child(2){animation-delay:.03s}.av-r.word:nth-child(3){animation-delay:.06s}.av-r.word:nth-child(4){animation-delay:.09s}.av-r.word:nth-child(n+5){animation-delay:.12s}
+
+/* タブ：選ばれた瞬間にアイコンとラベルがぽんっと弾む */
+@keyframes tabPop{0%{transform:scale(1)}28%{transform:scale(1.2) translateY(-2px)}58%{transform:scale(.94)}100%{transform:scale(1)}}
+.tab.pop .tic svg,.tab.pop>span{animation:tabPop .62s cubic-bezier(.3,1.4,.4,1)}
+.tab.pop{transition:none}
+/* 選択楕円：ガラスから暗い楕円へ、光がすっと引いていく */
+@keyframes thumbSettle{0%{filter:brightness(2.4) saturate(1.3);box-shadow:0 0 0 1.5px rgba(255,255,255,.5) inset,0 0 26px rgba(108,195,221,.55)}55%{filter:brightness(1.4)}100%{filter:none;box-shadow:none}}
+.thumb.settle{animation:thumbSettle .85s ease-out}
+
+/* ボタン：押すと沈み、離すとぷるんと戻る */
+button{transition:scale .45s cubic-bezier(.3,1.6,.4,1),background-color .25s,opacity .2s}
+button:active{scale:.93;transition-duration:.12s}
+.tab:active,.sr-card:active{scale:.95}
+.chip:active,.siri-btn:active{scale:.92}
+
+/* シート：下からばねで持ち上がる */
+.sheet{transition:opacity .35s,transform .6s cubic-bezier(.25,1.35,.4,1),filter .4s!important}
+#sheet:not(.in) .sheet{transform:translateY(46px) scale(.9)}
+#settings{transition:opacity .35s,transform .6s cubic-bezier(.25,1.3,.4,1)}
+
+/* スイッチ・セグメント・進行バー */
+.st-sw{transition:background .35s}
+.av-seg button,.siri-seg button{transition:background .35s cubic-bezier(.3,1.4,.4,1),box-shadow .35s,color .25s,scale .3s var(--spring)}
+.sprog i{transition:width .6s cubic-bezier(.3,1.3,.4,1)}
+
+/* 視差効果を減らす */
+html.rm *,html.rm *::before,html.rm *::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}}
