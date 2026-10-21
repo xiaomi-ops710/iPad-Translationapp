@@ -270,7 +270,7 @@
   const TABS = [['translate', '翻訳'], ['camera', 'カメラ'], ['conversation', '会話'], ['siri', 'Siri'], ['fav', 'お気に入り']];
   function buildShell() {
     app.innerHTML = `<aside id="sidebar"><div class="sb-in" id="sbin"></div></aside>
-      <main id="main"><div id="phbar" class="phbar"></div><header id="topbar"><div class="tabs" id="tabs"><span class="thumb" id="tthumb"></span><i class="tlens" id="tlens"></i><button class="tab tab-ic" data-act="layout" aria-label="サイドバーを表示">${I.sidebar}</button>${TABS.map(([n, l]) => `<button class="tab" data-nav="${n}"><i class="tic">${TABIC[n] || ''}</i><span>${l}</span></button>`).join('')}</div><button class="more-btn" data-act="more" aria-label="その他">${I.more}</button></header><div id="content"></div></main>`;
+      <main id="main"><div id="phbar" class="phbar"></div><header id="topbar"><div class="tabs" id="tabs"><span class="thumb" id="tthumb"></span><div class="tlens" id="tlens"></div><button class="tab tab-ic" data-act="layout" aria-label="サイドバーを表示">${I.sidebar}</button>${TABS.map(([n, l]) => `<button class="tab" data-nav="${n}"><i class="tic">${TABIC[n] || ''}</i><span>${l}</span></button>`).join('')}</div><button class="more-btn" data-act="more" aria-label="その他">${I.more}</button></header><div id="content"></div></main>`;
     sbSig = '';
   }
   function sidebarInner(pairs) {
@@ -1679,21 +1679,25 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
 
   /* ------------------------------------------------ タブバーの選択ガラス（iOS 26 / 27 の Liquid Glass タブバー）
    * 選択楕円（#tthumb）とガラスのレンズ（#tlens）は、同じ位置・同じ大きさを共有する「ひとつの物体」。
-   * 状態は x（レンズの中心）と lift（0＝平らな選択楕円 / 1＝持ち上がったガラス）の 2 つのばねだけで、
-   * 見た目（大きさ・伸び縮み・影・各タブの拡大と色）はすべてこの 2 値から毎フレーム計算する。
+   * 状態は x（レンズの中心）・lift（0＝平らな選択楕円 / 1＝持ち上がったガラス）・sj（ぷるんと揺れる伸縮）の
+   * 3 つのばねだけで、見た目（大きさ・伸び縮み・影・屈折・各タブの色）はすべてこの値から毎フレーム計算する。
    *   idle   : 平らな選択楕円がタブの上にある
    *   drag   : 選択中のタブを長押し／ドラッグ → ガラスが持ち上がり、指に追従する
-   *   settle : 指を離した → 近いタブへ移動しながらガラスが平らな楕円へ戻る
+   *   settle : 指を離した → 近いタブへ弾みながら移動し、ガラスが平らな楕円へ戻る
    *   travel : タップ等で選択が変わった → ガラスが持ち上がって移動し、着地して戻る
-   * 個別の scale プロパティや CSS transition でレンズを動かさないので、位置がずれたり全体へ広がったりしない。 */
+   * レンズの中身は「バーの複製」を屈折フィルタ（feDisplacementMap）に通したもの。複製の位置は毎フレーム
+   * バーの座標から直接計算するので、本物のタブと必ず重なる。個別の scale プロパティで動かすことはしない。 */
   const reduceMotion = () => (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || !!(S.appear && S.appear.rm);
-  const TB = { th: null, gl: null, bar: null, geo: [], key: null, mode: 'idle', x: 0, v: 0, tx: 0, lift: 0, lv: 0, tl: 0, over: 0, side: 0, hover: -1, t: 0, t0: 0, d0: 0, raf: 0, drag: null };
+  const TB = { th: null, gl: null, bar: null, bw: 0, geo: [], all: [], key: null, mode: 'idle', x: 0, v: 0, tx: 0, lift: 0, lv: 0, tl: 0, sj: 0, sjv: 0, over: 0, side: 0, hover: -1, t: 0, t0: 0, d0: 0, raf: 0, drag: null,
+    built: false, BW: 0, BH: 0, IW: 0, IH: 0, M: 20, lw: null, lc: null, cmap: null, lastBuild: 0, lastW: 0, seq: 0 };
   const tbClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const TB_MAG = 1.12;   // ガラス越しの拡大率
 
   function tbMeasure() {
     const bar = $('#tabs'); if (!bar) return false;
     TB.bar = bar; TB.th = $('#tthumb'); TB.gl = $('#tlens'); TB.bw = bar.offsetWidth;
-    TB.geo = $$('.tab[data-nav]', bar).filter((t) => t.offsetParent !== null && t.offsetWidth > 0)
+    TB.all = Array.from(bar.children).filter((t) => t.classList.contains('tab') && t.offsetParent !== null && t.offsetWidth > 0);   // レンズ内の複製は含めない
+    TB.geo = TB.all.filter((t) => t.dataset.nav)
       .map((el) => ({ el, nav: el.dataset.nav, c: el.offsetLeft + el.offsetWidth / 2, w: el.offsetWidth, h: el.offsetHeight, y: el.offsetTop + el.offsetHeight / 2 }));
     return !!(TB.th && TB.gl && TB.geo.length);
   }
@@ -1707,16 +1711,83 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     return { w: a.w + (b.w - a.w) * t, h: a.h + (b.h - a.h) * t, y: a.y + (b.y - a.y) * t };
   }
   const tbNearest = (x) => { let k = 0; TB.geo.forEach((g, i) => { if (Math.abs(g.c - x) < Math.abs(TB.geo[k].c - x)) k = i; }); return k; };
+  /* 持ち上がったガラスの大きさ：選択楕円よりひと回り大きく、バーの上下へ大きくはみ出す */
+  const tbLensSize = (z) => ({ w: z.w * 1.14 + 8, h: z.h * 1.22 + 10 });
 
-  /* 描画：x と lift だけから、形・影・各タブの拡大と色を決める */
+  /* 屈折マップ：カプセル形の縁ほど、レンズの「外側」の景色を内側へ圧縮して映す（feDisplacementMap に渡す） */
+  function tbMap(bw, bh, M) {
+    const sc = 2, W = bw + 2 * M, H = bh + 2 * M, cw = Math.ceil(W * sc), ch = Math.ceil(H * sc);
+    const r = bh * sc / 2, mx = M * sc, cy = ch / 2, bez = r * 0.55, x0 = mx + r, x1 = cw - mx - r;
+    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    const g = cv.getContext('2d'), img = g.createImageData(cw, ch), d = img.data;
+    for (let y = 0; y < ch; y++) {
+      for (let x = 0; x < cw; x++) {
+        const px = Math.min(Math.max(x, x0), x1), dx = x - px, dy = y - cy, dist = Math.hypot(dx, dy), depth = r - dist;
+        let ox = 0, oy = 0;
+        if (depth >= 0 && depth < bez && dist > 0) {
+          const t = 1 - depth / bez, m = t * t * (3 - 2 * t) * 0.5 + t * t * t * t * 0.5;
+          ox = dx / dist * m; oy = dy / dist * m;
+        }
+        const i = (y * cw + x) * 4;
+        d[i] = 128 + ox * 127; d[i + 1] = 128 + oy * 127; d[i + 2] = 128; d[i + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+  /* 屈折＋R/G/B をわずかにずらす色収差。Safari でも HTML 要素への filter:url() は有効 */
+  function tbFilter(id, W, H, map, S) {
+    const wrap = document.createElementNS(NS, 'svg');
+    wrap.setAttribute('width', '0'); wrap.setAttribute('height', '0');
+    wrap.style.cssText = 'position:absolute;pointer-events:none';
+    const ch = (c, sc) => `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sc}" xChannelSelector="R" yChannelSelector="G" result="d${c}"/><feColorMatrix in="d${c}" type="matrix" values="${c === 'R' ? '1 0 0 0 0' : '0 0 0 0 0'} ${c === 'G' ? '0 1 0 0 0' : '0 0 0 0 0'} ${c === 'B' ? '0 0 1 0 0' : '0 0 0 0 0'} 0 0 0 1 0" result="c${c}"/>`;
+    wrap.innerHTML = `<filter id="${id}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}" color-interpolation-filters="sRGB">
+      <feImage href="${map}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" result="map"/>
+      ${ch('R', S)}${ch('G', Math.round(S * 1.03))}${ch('B', Math.round(S * 1.06))}
+      <feComposite in="cR" in2="cG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg"/>
+      <feComposite in="rg" in2="cB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>`;
+    return wrap;
+  }
+  /* レンズの中身を作る：バーの複製（屈折フィルタ越し）。大きさが大きく変わったら（幅の違うタブへ移ったとき）作り直す */
+  function tbBuild(z) {
+    const T = TB, ls = tbLensSize(z), M = T.M;
+    T.BW = ls.w; T.BH = ls.h; T.lastW = z.w;
+    T.gl.innerHTML = '';
+    const IW = Math.ceil(ls.w + 2 * M), IH = Math.ceil(ls.h + 2 * M), fid = 'tlf' + (++T.seq);
+    const S = Math.round(Math.min(M - 3, ls.h * 0.2) * 2);
+    const svg = tbFilter(fid, IW, IH, tbMap(ls.w, ls.h, M), S);
+    const lw = document.createElement('div'); lw.className = 'lw';
+    lw.style.cssText = `width:${IW}px;height:${IH}px;left:50%;top:50%;margin:${-IH / 2}px 0 0 ${-IW / 2}px;filter:url(#${fid})`;
+    const lc = document.createElement('div'); lc.className = 'lc';
+    const cs = getComputedStyle(T.bar);
+    lc.style.cssText = `position:absolute;left:0;top:0;display:flex;align-items:center;pointer-events:none;transform-origin:0 0;width:${T.bar.offsetWidth}px;height:${T.bar.offsetHeight}px;padding:${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft};gap:${cs.columnGap}`;
+    T.cmap = {};
+    T.all.forEach((tb) => {
+      const k = tb.cloneNode(true);
+      k.removeAttribute('data-act'); k.removeAttribute('data-nav'); k.removeAttribute('style'); k.classList.remove('on', 'tpop');
+      if (tb.dataset.nav) { k.dataset.cn = tb.dataset.nav; T.cmap[tb.dataset.nav] = k; }
+      lc.appendChild(k);
+    });
+    lw.appendChild(lc); T.gl.appendChild(svg); T.gl.appendChild(lw);
+    T.lw = lw; T.lc = lc; T.IW = IW; T.IH = IH; T.built = true; T.lastBuild = performance.now();
+  }
+  function tbCleanup() {
+    const T = TB;
+    if (T.gl) T.gl.innerHTML = '';
+    T.built = false; T.lw = null; T.lc = null; T.cmap = null;
+    T.all.forEach((tb) => { tb.style.webkitMaskImage = ''; tb.style.maskImage = ''; });
+    T.geo.forEach((g) => g.el.style.removeProperty('--tt'));
+  }
+
+  /* 描画：x・lift・sj だけから、形・影・屈折・各タブの色を決める */
   function tbRender() {
     const T = TB; if (!T.th || !T.geo.length) return;
-    const L = Math.max(0, T.lift), Lc = Math.min(1, L), z = tbSizeAt(T.x);
-    const sp = Math.min(1, Math.abs(T.v) / 1500) * Lc;            // 速さ（0〜1）
+    const L = Math.max(0, T.lift), Lc = Math.min(1, L), z = tbSizeAt(T.x), ls = tbLensSize(z);
     const sq = Math.min(1, Math.abs(T.over) / 60) * Lc;           // 端を押し込んだ量（0〜1）
-    let w = z.w + 14 * L, h = z.h + 14 * L;                       // 持ち上がると一回り大きくなる（バーの上下へは少しはみ出す）
-    w *= 1 + 0.22 * sp; h *= 1 - 0.08 * sp;                       // 速いほど進行方向へ伸びる
-    h *= 1 + 0.05 * sq;
+    const j = T.sj * Math.min(1, L * 1.2);                        // ぷるんと揺れる伸縮（負になると逆に縮む）
+    let w = z.w + (ls.w - z.w) * L, h = z.h + (ls.h - z.h) * L;   // 持ち上がり量 1 を超えると一瞬大きくなる（ぽよん）
+    w *= 1 + 0.28 * j; h *= 1 - 0.14 * j; h *= 1 + 0.05 * sq;
     // 横はバーの外へ出さない。端では壁に当たったように、ぶつかった側が固定されたまま反対側が縮む
     let l = T.x - w / 2, r = T.x + w / 2; const lo = -1, hi = T.bw + 1;
     if (l < lo) { const o = lo - l; l = lo; r -= o * 0.45; }
@@ -1724,14 +1795,27 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     w = Math.max(z.h, r - l); const left = l, top = z.y - h / 2;
     const tr = `translate3d(${left.toFixed(2)}px,${top.toFixed(2)}px,0)`;
     const set = (el, o) => { el.style.width = w.toFixed(2) + 'px'; el.style.height = h.toFixed(2) + 'px'; el.style.transform = tr; el.style.opacity = o.toFixed(3); };
+    const co = tbClamp((L - 0.1) * 1.8, 0, 1);                    // 屈折する中身の濃さ（本物のタブと入れ替わる）
     set(T.th, 1 - tbClamp(L * 1.5, 0, 1));                        // 平らな楕円はガラスに入れ替わるように消え
     set(T.gl, tbClamp(L * 1.25, 0, 1));                           // ガラスが現れる
     T.gl.style.setProperty('--l', Lc.toFixed(3));
     T.gl.style.setProperty('--gx', (50 - tbClamp(T.v / 18, -45, 45)).toFixed(1) + '%');
-    T.geo.forEach((g) => {                                        // レンズの下のタブほど濃く・大きく（ガラス越しの拡大）
-      const k = Math.max(0, 1 - Math.abs(T.x - g.c) / (g.w * 0.72 + 8)), wt = k * k * (3 - 2 * k);
-      g.el.style.setProperty('--tt', wt.toFixed(3));
-      g.el.style.setProperty('--tm', (1 + 0.16 * Lc * wt).toFixed(4));
+    if (T.built) {
+      const cxw = left + w / 2;
+      T.lw.style.transform = `scale(${(w / T.BW).toFixed(4)},${(h / T.BH).toFixed(4)})`;
+      T.lw.style.opacity = co.toFixed(3);
+      T.lc.style.transform = `translate(${T.IW / 2}px,${T.IH / 2}px) scale(${TB_MAG}) translate(${(-cxw).toFixed(2)}px,${(-z.y).toFixed(2)}px)`;
+      const al = (1 - co).toFixed(3), a0 = left, b0 = left + w;  // レンズの下の本物のタブは、中身と入れ替わるように隠す
+      T.all.forEach((tb) => {
+        const a = Math.max(0, a0 - tb.offsetLeft), b = Math.min(tb.offsetWidth, b0 - tb.offsetLeft);
+        const m = (co < 0.01 || b <= 0 || a >= tb.offsetWidth) ? '' : `linear-gradient(90deg,#000 0,#000 ${a}px,rgba(0,0,0,${al}) ${a}px,rgba(0,0,0,${al}) ${b}px,#000 ${b}px,#000 100%)`;
+        tb.style.webkitMaskImage = m; tb.style.maskImage = m;
+      });
+    }
+    T.geo.forEach((g) => {                                        // レンズの下のタブほど濃い色（ティール）に
+      const k = Math.max(0, 1 - Math.abs(T.x - g.c) / (g.w * 0.72 + 8)), wt = (k * k * (3 - 2 * k)).toFixed(3);
+      g.el.style.setProperty('--tt', wt);
+      const c = T.cmap && T.cmap[g.nav]; if (c) c.style.setProperty('--tt', wt);
     });
     const hv = tbNearest(T.x);
     if (T.mode === 'drag' && hv !== T.hover) { T.hover = hv; if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) { /* ignore */ } } }
@@ -1739,6 +1823,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
 
   function tbRun() {
     if (TB.raf) return;
+    if (!TB.built) tbBuild(tbSizeAt(TB.x));
     TB.t = performance.now();
     TB.bar.classList.add('tbm');
     TB.raf = requestAnimationFrame(tbStep);
@@ -1748,27 +1833,31 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     if (!T.th || !T.geo.length) return;
     const dt = Math.min(0.05, Math.max(0.001, (now - T.t) / 1000)); T.t = now;
     const n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n;     // 細かく刻んで安定させる
-    const kx = T.mode === 'drag' ? 640 : T.mode === 'settle' ? 520 : 430;
-    const cx = T.mode === 'drag' ? 36 : T.mode === 'settle' ? 35 : 31;   // 減衰比 0.7〜0.75：ほんの少しだけ行き過ぎて戻る
+    // 減衰比 0.5〜0.55：指に少し遅れてついてきて、止まるときに行き過ぎて「ぷるん」と戻る
+    const kx = T.mode === 'drag' ? 560 : T.mode === 'settle' ? 470 : 400;
+    const cx = T.mode === 'drag' ? 27 : T.mode === 'settle' ? 24 : 22;
     for (let i = 0; i < n; i++) {
       T.v += ((T.tx - T.x) * kx - T.v * cx) * h; T.x += T.v * h;
-      T.lv += ((T.tl - T.lift) * 460 - T.lv * (T.tl > 0.5 ? 27 : 38)) * h; T.lift += T.lv * h;   // 持ち上がりは少し弾み、戻りは弾まない
+      T.lv += ((T.tl - T.lift) * 420 - T.lv * (T.tl > 0.5 ? 20 : 30)) * h; T.lift += T.lv * h;   // 持ち上がりは大きく弾み、戻りは弾まない
+      const st = Math.min(1, Math.abs(T.v) / 1400);                                              // 速さに応じて伸び、止まると縮んで揺れ戻る
+      T.sjv += ((st - T.sj) * 300 - T.sjv * 14) * h; T.sj += T.sjv * h;
     }
     if (T.lift < 0) { T.lift = 0; if (T.lv < 0) T.lv = 0; }
     // 指を離した後・タップ後：目的のタブへ近づいたら（または一定時間たったら）ガラスを平らな楕円へ戻す
     if ((T.mode === 'settle' || T.mode === 'travel') && T.tl === 1 && now - T.t0 > 130) {
-      if (Math.abs(T.tx - T.x) < Math.max(16, T.d0 * 0.32) || now - T.t0 > 560) T.tl = 0;
+      if (Math.abs(T.tx - T.x) < Math.max(16, T.d0 * 0.32) || now - T.t0 > 600) T.tl = 0;
     }
+    if (T.built) { const z = tbSizeAt(T.x); if (Math.abs(z.w / T.lastW - 1) > 0.14 && now - T.lastBuild > 150) tbBuild(z); }
     tbRender();
-    if (T.mode !== 'drag' && T.tl === 0 && T.lift < 0.003 && Math.abs(T.lv) < 0.05 && Math.abs(T.tx - T.x) < 0.25 && Math.abs(T.v) < 4) { tbEnd(); return; }
+    if (T.mode !== 'drag' && T.tl === 0 && T.lift < 0.003 && Math.abs(T.lv) < 0.05 && Math.abs(T.tx - T.x) < 0.25 && Math.abs(T.v) < 4 && Math.abs(T.sj) < 0.01 && Math.abs(T.sjv) < 0.2) { tbEnd(); return; }
     T.raf = requestAnimationFrame(tbStep);
   }
   function tbEnd() {
     const T = TB;
-    T.mode = 'idle'; T.lift = 0; T.lv = 0; T.v = 0; T.over = 0; T.side = 0; T.x = T.tx; T.hover = -1;
+    T.mode = 'idle'; T.lift = 0; T.lv = 0; T.v = 0; T.sj = 0; T.sjv = 0; T.over = 0; T.side = 0; T.x = T.tx; T.hover = -1;
     tbRender();
     T.bar.classList.remove('tbm');
-    T.geo.forEach((g) => { g.el.style.removeProperty('--tt'); g.el.style.removeProperty('--tm'); });
+    tbCleanup();
     T.th.style.opacity = '1'; T.gl.style.opacity = '0';
     tbPlace();   // 実際の選択タブとずれていたら追いかける
   }
@@ -1784,13 +1873,12 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     if (T.mode === 'travel' && !still) { T.key = g.nav; T.tx = g.c; T.t0 = performance.now(); T.d0 = Math.abs(g.c - T.x); T.tl = 1; return; }
     if (still) {
       T.key = g.nav; T.x = g.c; T.tx = g.c; T.v = 0;
-      if (T.mode === 'travel') { T.mode = 'idle'; T.lift = 0; T.lv = 0; T.tl = 0; if (T.raf) { cancelAnimationFrame(T.raf); T.raf = 0; } T.bar.classList.remove('tbm'); }
-      T.lift = 0; T.lv = 0; T.over = 0; T.side = 0;
-      tbRender(); T.th.style.opacity = '1'; T.gl.style.opacity = '0';
-      T.geo.forEach((q) => { q.el.style.removeProperty('--tt'); q.el.style.removeProperty('--tm'); });
+      if (T.mode === 'travel') { T.mode = 'idle'; T.tl = 0; if (T.raf) { cancelAnimationFrame(T.raf); T.raf = 0; } T.bar.classList.remove('tbm'); }
+      T.lift = 0; T.lv = 0; T.sj = 0; T.sjv = 0; T.over = 0; T.side = 0;
+      tbRender(); tbCleanup(); T.th.style.opacity = '1'; T.gl.style.opacity = '0';
       return;
     }
-    T.key = g.nav; T.tx = g.c; T.mode = 'travel'; T.t0 = performance.now(); T.d0 = Math.abs(g.c - T.x); T.tl = 1; T.v = T.v || 0;
+    T.key = g.nav; T.tx = g.c; T.mode = 'travel'; T.t0 = performance.now(); T.d0 = Math.abs(g.c - T.x); T.tl = 1;
     tbRun();
   }
 
