@@ -270,7 +270,7 @@
   const TABS = [['translate', '翻訳'], ['camera', 'カメラ'], ['conversation', '会話'], ['siri', 'Siri'], ['fav', 'お気に入り']];
   function buildShell() {
     app.innerHTML = `<aside id="sidebar"><div class="sb-in" id="sbin"></div></aside>
-      <main id="main"><div id="phbar" class="phbar"></div><header id="topbar"><div class="tabs" id="tabs"><span class="thumb" id="tthumb"></span><button class="tab tab-ic" data-act="layout" aria-label="サイドバーを表示">${I.sidebar}</button>${TABS.map(([n, l]) => `<button class="tab" data-nav="${n}"><i class="tic">${TABIC[n] || ''}</i><span>${l}</span></button>`).join('')}</div><button class="more-btn" data-act="more" aria-label="その他">${I.more}</button></header><div id="content"></div></main>`;
+      <main id="main"><div id="phbar" class="phbar"></div><header id="topbar"><div class="tabs" id="tabs"><span class="thumb" id="tthumb"></span><i class="tlens" id="tlens"></i><button class="tab tab-ic" data-act="layout" aria-label="サイドバーを表示">${I.sidebar}</button>${TABS.map(([n, l]) => `<button class="tab" data-nav="${n}"><i class="tic">${TABIC[n] || ''}</i><span>${l}</span></button>`).join('')}</div><button class="more-btn" data-act="more" aria-label="その他">${I.more}</button></header><div id="content"></div></main>`;
     sbSig = '';
   }
   function sidebarInner(pairs) {
@@ -284,6 +284,7 @@
   }
   const activeKey = () => (conv.open ? 'conversation' : view === 'fav' ? 'fav:' + (favFilter || '') : view);
   const NS = 'http://www.w3.org/2000/svg';
+  let thumbQuiet = false;
   /* 選択ハイライト：移動元と移動先をまたぐ「水滴」のように伸びてから目的の形へ収束する */
   function place(th, el) {
     if (!th) return;
@@ -295,7 +296,7 @@
     th.style.width = nw + 'px'; th.style.height = nh + 'px';
     th.style.transform = `translate(${nx}px,${ny}px)`;
     th._x = nx; th._y = ny; th._w = nw; th._h = nh; th.dataset.i = '1';
-    if (first || reduceMotion() || !th.animate || (px === nx && py === ny && pw === nw && ph === nh)) return;
+    if (first || thumbQuiet || reduceMotion() || !th.animate || (px === nx && py === ny && pw === nw && ph === nh)) return;
     const ux = Math.min(px, nx), uy = Math.min(py, ny);
     const uw = Math.max(px + pw, nx + nw) - ux, uh = Math.max(py + ph, ny + nh) - uy;
     const horiz = Math.abs(nx - px) >= Math.abs(ny - py);
@@ -307,7 +308,7 @@
     th.classList.remove('settle'); void th.offsetWidth; th.classList.add('settle'); setTimeout(() => th.classList.remove('settle'), 900);
   }
   function updateThumbs() {
-    place($('#tthumb'), $('#tabs .tab.on'));
+    tbPlace();
     place($('#sthumb'), $('#sblist .sb-item.on'));
   }
   function updatePhbar() {
@@ -329,7 +330,7 @@
     const sig = S.favOpen + '|' + pairs.join(',');
     if (sig !== sbSig) { sbSig = sig; $('#sbin').innerHTML = sidebarInner(pairs); }
     const k = activeKey();
-    $$('#tabs .tab[data-nav]').forEach((b) => { const on = b.dataset.nav === (conv.open ? 'conversation' : view); const was = b.classList.contains('on'); b.classList.toggle('on', on); if (on && !was && ready) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 700); } });
+    $$('#tabs .tab[data-nav]').forEach((b) => { const on = b.dataset.nav === (conv.open ? 'conversation' : view); b.classList.toggle('on', on); });
     $$('#sblist .sb-item').forEach((b) => b.classList.toggle('on', b.dataset.key === k));
     updateThumbs();
   }
@@ -1676,201 +1677,174 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     popCb = (k, p) => { if (k === 'set') { openSettings(); return; } return cb(k, p); };
   }
 
-  /* ------------------------------------------------ Liquid Glass レンズ（タブバー）
-   * 選択中のタブを長押し（または少し動かす）とガラスの楕円が出現し、横にスライドしてタブを切り替える。
-   * レンズの中はタブ表示の複製を拡大して重ね、「ガラス越しの拡大」を再現する。 */
-  let lens = null;
+  /* ------------------------------------------------ タブバーの選択ガラス（iOS 26 / 27 の Liquid Glass タブバー）
+   * 選択楕円（#tthumb）とガラスのレンズ（#tlens）は、同じ位置・同じ大きさを共有する「ひとつの物体」。
+   * 状態は x（レンズの中心）と lift（0＝平らな選択楕円 / 1＝持ち上がったガラス）の 2 つのばねだけで、
+   * 見た目（大きさ・伸び縮み・影・各タブの拡大と色）はすべてこの 2 値から毎フレーム計算する。
+   *   idle   : 平らな選択楕円がタブの上にある
+   *   drag   : 選択中のタブを長押し／ドラッグ → ガラスが持ち上がり、指に追従する
+   *   settle : 指を離した → 近いタブへ移動しながらガラスが平らな楕円へ戻る
+   *   travel : タップ等で選択が変わった → ガラスが持ち上がって移動し、着地して戻る
+   * 個別の scale プロパティや CSS transition でレンズを動かさないので、位置がずれたり全体へ広がったりしない。 */
   const reduceMotion = () => (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || !!(S.appear && S.appear.rm);
-  let lensSeq = 0;
+  const TB = { th: null, gl: null, bar: null, geo: [], key: null, mode: 'idle', x: 0, v: 0, tx: 0, lift: 0, lv: 0, tl: 0, over: 0, side: 0, hover: -1, t: 0, t0: 0, d0: 0, raf: 0, drag: null };
+  const tbClamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  /* 屈折マップ：カプセル形のレンズの縁ほど内容を内側へ引き込む（キャンバスで生成 → feDisplacementMap に渡す） */
-  function lensMap(w, h) {
-    const sc = 2, cw = Math.ceil(w * sc), ch = Math.ceil(h * sc), r = ch / 2, bez = r * 0.36;
-    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
-    const g = cv.getContext('2d'), img = g.createImageData(cw, ch), d = img.data;
-    for (let y = 0; y < ch; y++) {
-      for (let x = 0; x < cw; x++) {
-        const px = Math.min(Math.max(x, r), cw - r), dx = x - px, dy = y - r, dist = Math.hypot(dx, dy), depth = r - dist;
-        let ox = 0, oy = 0;
-        if (depth >= 0 && depth < bez && dist > 0) {
-          const t = 1 - depth / bez, m = t * t * (3 - 2 * t) * 0.6 + t * t * t * 0.4;
-          ox = -dx / dist * m; oy = -dy / dist * m;
-        }
-        const i = (y * cw + x) * 4;
-        d[i] = 128 + ox * 127; d[i + 1] = 128 + oy * 127; d[i + 2] = 128; d[i + 3] = 255;
-      }
+  function tbMeasure() {
+    const bar = $('#tabs'); if (!bar) return false;
+    TB.bar = bar; TB.th = $('#tthumb'); TB.gl = $('#tlens'); TB.bw = bar.offsetWidth;
+    TB.geo = $$('.tab[data-nav]', bar).filter((t) => t.offsetParent !== null && t.offsetWidth > 0)
+      .map((el) => ({ el, nav: el.dataset.nav, c: el.offsetLeft + el.offsetWidth / 2, w: el.offsetWidth, h: el.offsetHeight, y: el.offsetTop + el.offsetHeight / 2 }));
+    return !!(TB.th && TB.gl && TB.geo.length);
+  }
+  /* 位置 x でのタブの大きさ（隣り合うタブの中心の間は線形に補間。幅の違うタブをまたいでも楕円が滑らかに伸縮する） */
+  function tbSizeAt(x) {
+    const g = TB.geo, n = g.length;
+    if (x <= g[0].c) return g[0];
+    if (x >= g[n - 1].c) return g[n - 1];
+    let i = 0; while (i < n - 2 && x > g[i + 1].c) i++;
+    const a = g[i], b = g[i + 1], t = (x - a.c) / (b.c - a.c);
+    return { w: a.w + (b.w - a.w) * t, h: a.h + (b.h - a.h) * t, y: a.y + (b.y - a.y) * t };
+  }
+  const tbNearest = (x) => { let k = 0; TB.geo.forEach((g, i) => { if (Math.abs(g.c - x) < Math.abs(TB.geo[k].c - x)) k = i; }); return k; };
+
+  /* 描画：x と lift だけから、形・影・各タブの拡大と色を決める */
+  function tbRender() {
+    const T = TB; if (!T.th || !T.geo.length) return;
+    const L = Math.max(0, T.lift), Lc = Math.min(1, L), z = tbSizeAt(T.x);
+    const sp = Math.min(1, Math.abs(T.v) / 1500) * Lc;            // 速さ（0〜1）
+    const sq = Math.min(1, Math.abs(T.over) / 60) * Lc;           // 端を押し込んだ量（0〜1）
+    let w = z.w + 14 * L, h = z.h + 14 * L;                       // 持ち上がると一回り大きくなる（バーの上下へは少しはみ出す）
+    w *= 1 + 0.22 * sp; h *= 1 - 0.08 * sp;                       // 速いほど進行方向へ伸びる
+    h *= 1 + 0.05 * sq;
+    // 横はバーの外へ出さない。端では壁に当たったように、ぶつかった側が固定されたまま反対側が縮む
+    let l = T.x - w / 2, r = T.x + w / 2; const lo = -1, hi = T.bw + 1;
+    if (l < lo) { const o = lo - l; l = lo; r -= o * 0.45; }
+    if (r > hi) { const o = r - hi; r = hi; l += o * 0.45; }
+    w = Math.max(z.h, r - l); const left = l, top = z.y - h / 2;
+    const tr = `translate3d(${left.toFixed(2)}px,${top.toFixed(2)}px,0)`;
+    const set = (el, o) => { el.style.width = w.toFixed(2) + 'px'; el.style.height = h.toFixed(2) + 'px'; el.style.transform = tr; el.style.opacity = o.toFixed(3); };
+    set(T.th, 1 - tbClamp(L * 1.5, 0, 1));                        // 平らな楕円はガラスに入れ替わるように消え
+    set(T.gl, tbClamp(L * 1.25, 0, 1));                           // ガラスが現れる
+    T.gl.style.setProperty('--l', Lc.toFixed(3));
+    T.gl.style.setProperty('--gx', (50 - tbClamp(T.v / 18, -45, 45)).toFixed(1) + '%');
+    T.geo.forEach((g) => {                                        // レンズの下のタブほど濃く・大きく（ガラス越しの拡大）
+      const k = Math.max(0, 1 - Math.abs(T.x - g.c) / (g.w * 0.72 + 8)), wt = k * k * (3 - 2 * k);
+      g.el.style.setProperty('--tt', wt.toFixed(3));
+      g.el.style.setProperty('--tm', (1 + 0.16 * Lc * wt).toFixed(4));
+    });
+    const hv = tbNearest(T.x);
+    if (T.mode === 'drag' && hv !== T.hover) { T.hover = hv; if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) { /* ignore */ } } }
+  }
+
+  function tbRun() {
+    if (TB.raf) return;
+    TB.t = performance.now();
+    TB.bar.classList.add('tbm');
+    TB.raf = requestAnimationFrame(tbStep);
+  }
+  function tbStep(now) {
+    const T = TB; T.raf = 0;
+    if (!T.th || !T.geo.length) return;
+    const dt = Math.min(0.05, Math.max(0.001, (now - T.t) / 1000)); T.t = now;
+    const n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n;     // 細かく刻んで安定させる
+    const kx = T.mode === 'drag' ? 640 : T.mode === 'settle' ? 520 : 430;
+    const cx = T.mode === 'drag' ? 36 : T.mode === 'settle' ? 35 : 31;   // 減衰比 0.7〜0.75：ほんの少しだけ行き過ぎて戻る
+    for (let i = 0; i < n; i++) {
+      T.v += ((T.tx - T.x) * kx - T.v * cx) * h; T.x += T.v * h;
+      T.lv += ((T.tl - T.lift) * 460 - T.lv * (T.tl > 0.5 ? 27 : 38)) * h; T.lift += T.lv * h;   // 持ち上がりは少し弾み、戻りは弾まない
     }
-    g.putImageData(img, 0, 0);
-    return cv.toDataURL('image/png');
+    if (T.lift < 0) { T.lift = 0; if (T.lv < 0) T.lv = 0; }
+    // 指を離した後・タップ後：目的のタブへ近づいたら（または一定時間たったら）ガラスを平らな楕円へ戻す
+    if ((T.mode === 'settle' || T.mode === 'travel') && T.tl === 1 && now - T.t0 > 130) {
+      if (Math.abs(T.tx - T.x) < Math.max(16, T.d0 * 0.32) || now - T.t0 > 560) T.tl = 0;
+    }
+    tbRender();
+    if (T.mode !== 'drag' && T.tl === 0 && T.lift < 0.003 && Math.abs(T.lv) < 0.05 && Math.abs(T.tx - T.x) < 0.25 && Math.abs(T.v) < 4) { tbEnd(); return; }
+    T.raf = requestAnimationFrame(tbStep);
   }
-  /* レンズ専用の SVG フィルタ（屈折＋R/G/B をわずかにずらす色収差）。Safari でも HTML 要素への filter:url() は有効 */
-  function lensFilter(w, h, id) {
-    const S = Math.round(h * 0.78);
-    const wrap = document.createElementNS(NS, 'svg');
-    wrap.setAttribute('width', '0'); wrap.setAttribute('height', '0');
-    wrap.style.cssText = 'position:absolute;pointer-events:none';
-    const ch = (c, sc) => `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sc}" xChannelSelector="R" yChannelSelector="G" result="d${c}"/><feColorMatrix in="d${c}" type="matrix" values="${c === 'R' ? '1 0 0 0 0' : '0 0 0 0 0'} ${c === 'G' ? '0 1 0 0 0' : '0 0 0 0 0'} ${c === 'B' ? '0 0 1 0 0' : '0 0 0 0 0'} 0 0 0 1 0" result="c${c}"/>`;
-    wrap.innerHTML = `<filter id="${id}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="0" y="0" width="${w}" height="${h}" color-interpolation-filters="sRGB">
-      <feImage href="${lensMap(w, h)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>
-      ${ch('R', S)}${ch('G', Math.round(S * 1.025))}${ch('B', Math.round(S * 1.05))}
-      <feComposite in="cR" in2="cG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg"/>
-      <feComposite in="rg" in2="cB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
-    </filter>`;
-    return wrap;
+  function tbEnd() {
+    const T = TB;
+    T.mode = 'idle'; T.lift = 0; T.lv = 0; T.v = 0; T.over = 0; T.side = 0; T.x = T.tx; T.hover = -1;
+    tbRender();
+    T.bar.classList.remove('tbm');
+    T.geo.forEach((g) => { g.el.style.removeProperty('--tt'); g.el.style.removeProperty('--tm'); });
+    T.th.style.opacity = '1'; T.gl.style.opacity = '0';
+    tbPlace();   // 実際の選択タブとずれていたら追いかける
   }
 
+  /* 選択中のタブへ楕円を合わせる（updateThumbs から呼ばれる）。選択が変わったときだけ「持ち上がって移動して着地」する */
+  function tbPlace() {
+    if (!tbMeasure()) return;
+    const T = TB, i = T.geo.findIndex((g) => g.el.classList.contains('on'));
+    if (i < 0) { T.th.style.opacity = '0'; T.gl.style.opacity = '0'; T.key = null; return; }
+    const g = T.geo[i];
+    if (T.mode === 'drag' || T.mode === 'settle') return;        // 操作中は指に任せる
+    const still = T.key === null || T.key === g.nav || reduceMotion() || !app.classList.contains('lay-tabbar');
+    if (T.mode === 'travel' && !still) { T.key = g.nav; T.tx = g.c; T.t0 = performance.now(); T.d0 = Math.abs(g.c - T.x); T.tl = 1; return; }
+    if (still) {
+      T.key = g.nav; T.x = g.c; T.tx = g.c; T.v = 0;
+      if (T.mode === 'travel') { T.mode = 'idle'; T.lift = 0; T.lv = 0; T.tl = 0; if (T.raf) { cancelAnimationFrame(T.raf); T.raf = 0; } T.bar.classList.remove('tbm'); }
+      T.lift = 0; T.lv = 0; T.over = 0; T.side = 0;
+      tbRender(); T.th.style.opacity = '1'; T.gl.style.opacity = '0';
+      T.geo.forEach((q) => { q.el.style.removeProperty('--tt'); q.el.style.removeProperty('--tm'); });
+      return;
+    }
+    T.key = g.nav; T.tx = g.c; T.mode = 'travel'; T.t0 = performance.now(); T.d0 = Math.abs(g.c - T.x); T.tl = 1; T.v = T.v || 0;
+    tbRun();
+  }
+
+  /* ---- 操作：選択中のタブを長押し（または少し動かす）とガラスが持ち上がり、指に合わせて動く */
+  const tbMx = (e) => { const bar = $('#tabs'); if (bar && bar.classList.contains('touch')) bar.style.setProperty('--mx', (e.clientX - bar.getBoundingClientRect().left) + 'px'); };
   document.addEventListener('pointerdown', (e) => {
     const bar0 = e.target.closest && e.target.closest('#tabs');
-    if (bar0) { bar0.classList.add('touch'); const r = bar0.getBoundingClientRect(); bar0.style.setProperty('--mx', (e.clientX - r.left) + 'px'); }
-    if (e.button > 0 || lens || !app.classList.contains('lay-tabbar')) return;
+    if (bar0) { bar0.classList.add('touch'); tbMx(e); }
+    if (e.button > 0 || TB.drag || reduceMotion() || !app.classList.contains('lay-tabbar')) return;
     const tab = e.target.closest && e.target.closest('#tabs .tab.on[data-nav]');
     if (!tab) return;
     const bar = $('#tabs');
-    lens = { id: e.pointerId, x0: e.clientX, y0: e.clientY, bar, tab, on: false, hover: -1 };
-    lens.timer = setTimeout(startLens, 140);
+    TB.drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, on: false, bar };
+    TB.drag.timer = setTimeout(tbGrab, 140);
     try { bar.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
   });
-  function startLens() {
-    const L = lens;
-    if (!L || L.on) return;
-    clearTimeout(L.timer);
-    const bar = L.bar, act = L.tab;
-    L.on = true;
-    L.tabs = $$('.tab[data-nav]', bar).filter((x) => x.offsetParent);
-    L.rect = bar.getBoundingClientRect();
-    L.bh = bar.offsetHeight;
-    L.lw = act.offsetWidth + 36;
-    L.lh = L.bh + 18;
-    L.ly = -(L.lh - L.bh) / 2;
-    const cen = (t) => t.offsetLeft + t.offsetWidth / 2;
-    L.min = cen(L.tabs[0]); L.max = cen(L.tabs[L.tabs.length - 1]);
-    L.grab = L.x0 - (L.rect.left + cen(act));
-    L.x = cen(act); L.tx = L.x; L.v = 0; L.t = performance.now(); L.rm = reduceMotion();
-    const el = document.createElement('div');
-    el.className = 'lens'; el.style.width = L.lw + 'px'; el.style.height = L.lh + 'px';
-    const fid = 'lgf' + (++lensSeq);
-    L.svg = lensFilter(L.lw, L.lh, fid);
-    const inner = document.createElement('div'); inner.className = 'lw'; inner.style.filter = `url(#${fid})`;
-    const lc = document.createElement('div'); lc.className = 'lc';
-    Array.from(bar.children).filter((c) => !c.classList.contains('thumb') && !c.classList.contains('lens') && c.tagName !== 'svg').forEach((c) => {
-      const k = c.cloneNode(true); k.removeAttribute('data-nav'); k.removeAttribute('data-act'); k.classList.remove('on'); lc.appendChild(k);
-    });
-    L.clones = Array.from(lc.querySelectorAll('.tab')).filter((c) => !c.classList.contains('tab-ic'));
-    inner.appendChild(lc);
-    const gl = document.createElement('i'); gl.className = 'gl';
-    el.appendChild(inner); el.appendChild(gl); bar.appendChild(L.svg); bar.appendChild(el);
-    L.el = el; L.lc = lc; L.gl = gl;
-    bar.classList.add('drag');
-    applyLens(L.x, 0);
-    void el.offsetWidth;
-    el.classList.add('in');
-    if (!L.rm && el.animate) { // 選択中の楕円から、ガラスがぷくっと膨らんで現れる
-      const rx = act.offsetWidth / L.lw, ry = act.offsetHeight / L.lh;
-      el.animate([{ scale: `${rx} ${ry}`, opacity: 0.2 }, { scale: '1.16 1.24', opacity: 1, offset: 0.5 }, { scale: '.97 .96', offset: 0.78 }, { scale: '1 1', opacity: 1 }], { duration: 560, easing: 'cubic-bezier(.3,.9,.35,1)' });
-      L.lc.animate([{ opacity: 0, filter: 'blur(7px)' }, { opacity: 1, filter: 'blur(0px)' }], { duration: 340, delay: 70, fill: 'backwards' });
-    }
-    L.raf = requestAnimationFrame(stepLens);
-  }
-  /* 位置と速度から「ぷるん」と伸び縮みするガラスの形を決める */
-  function applyLens(cx, vx) {
-    const L = lens || L_last;
-    if (!L || !L.el) return;
-    const lx = cx - L.lw / 2;
-    const s = L.rm ? 0 : Math.min(0.34, Math.abs(vx) / 2600);
-    const sk = L.rm ? 0 : Math.max(-9, Math.min(9, -vx / 150));
-    const imp = Math.max(L.imp || 0, L.rm ? 0 : Math.min(1, Math.abs(L.over || 0) / 70) * 0.6);
-    const sx = (1 + s) * (1 - imp * 0.14), sy = (1 - s * 0.62) * (1 + imp * 0.08);
-    L.el.style.transformOrigin = imp > 0.02 ? (L.side < 0 ? '0% 50%' : '100% 50%') : '50% 50%';
-    L.el.style.transform = `translate(${lx}px,${L.ly}px) scale(${sx},${sy}) skewX(${sk}deg)`;
-    L.lc.style.left = -lx + 'px'; L.lc.style.top = -L.ly + 'px';
-    // レンズの下にある本物のタブ文字を隠す（透明なガラス越しに二重に見えないように）
-    const h0 = lx + 7, h1 = lx + L.lw - 7;
-    L.tabs.forEach((tb) => {
-      const a = h0 - tb.offsetLeft, b = h1 - tb.offsetLeft;
-      const m = (L.nomask || b <= 0 || a >= tb.offsetWidth) ? '' : `linear-gradient(90deg,#000 0,#000 ${a}px,transparent ${a}px,transparent ${b}px,#000 ${b}px)`;
-      tb.style.webkitMaskImage = m; tb.style.maskImage = m;
-    });
-    L.lc.style.transformOrigin = `${cx}px ${L.bh / 2}px`;
-    L.gl.style.setProperty('--gx', (50 - Math.max(-45, Math.min(45, vx / 18))) + '%');
-    let h = L.tabs.findIndex((t) => cx >= t.offsetLeft && cx <= t.offsetLeft + t.offsetWidth);
-    if (h < 0) h = cx < L.min ? 0 : L.tabs.length - 1;
-    if (h !== L.hover) {
-      L.hover = h;
-      L.tabs.forEach((t, i) => t.classList.toggle('hov', i === h));
-      L.clones.forEach((t, i) => t.classList.toggle('hov', i === h));
-      if (navigator.vibrate) { try { navigator.vibrate(4); } catch (_) { /* ignore */ } }
-    }
-    L.cx = cx;
-  }
-  let L_last = null;
-  function stepLens(now) {
-    const L = lens || L_last;
-    if (!L || !L.el || L.dead) return;
-    const dt = Math.min(0.032, (now - L.t) / 1000 || 0.016); L.t = now;
-    if (L.rm) { L.x = L.tx; L.v = 0; }
-    else {
-      // 少しだけ弾むバネ（臨界減衰より弱め）
-      const k = L.released ? 900 : 520, c = L.released ? 46 : 30;
-      L.v += ((L.tx - L.x) * k - L.v * c) * dt;
-      L.x += L.v * dt;
-    }
-    if (L.imp) { L.imp *= Math.exp(-dt * 7); if (L.imp < 0.02) L.imp = 0; }
-    applyLens(L.x, L.v);
-    L.raf = requestAnimationFrame(stepLens);
+  function tbGrab() {
+    const D = TB.drag; if (!D || D.on) return;
+    clearTimeout(D.timer);
+    if (!tbMeasure()) { TB.drag = null; return; }
+    const T = TB, i = T.geo.findIndex((g) => g.el.classList.contains('on'));
+    if (T.mode === 'idle') { T.x = (T.geo[i] || T.geo[0]).c; T.v = 0; T.tx = T.x; }
+    D.on = true; D.rect = D.bar.getBoundingClientRect();
+    D.grab = D.x0 - (D.rect.left + T.x);                          // つかんだ位置のずれ（レンズが指へ飛ばない）
+    D.min = T.geo[0].c; D.max = T.geo[T.geo.length - 1].c;
+    T.mode = 'drag'; T.tl = 1; T.tx = T.x; T.over = 0; T.side = 0; T.hover = -1;
+    D.bar.classList.add('drag');
+    tbRun();
   }
   document.addEventListener('pointermove', (e) => {
-    const bar0 = $('#tabs');
-    if (bar0 && bar0.classList.contains('touch')) { const r = bar0.getBoundingClientRect(); bar0.style.setProperty('--mx', (e.clientX - r.left) + 'px'); }
-    const L = lens;
-    if (!L || e.pointerId !== L.id) return;
-    if (!L.on) { if (Math.hypot(e.clientX - L.x0, e.clientY - L.y0) > 6) startLens(); else return; }
-    const raw = e.clientX - L.rect.left - L.grab, over = raw < L.min ? raw - L.min : raw > L.max ? raw - L.max : 0;
-    L.over = over; L.tx = Math.max(L.min, Math.min(L.max, raw)) + Math.sign(over) * Math.min(12, Math.abs(over) * 0.25);
-    const edge = over !== 0 || L.tx <= L.min + 0.5 || L.tx >= L.max - 0.5;
-    if (edge && !L.atEdge && !L.rm) { // 端に当たった：ぶにゅっと潰れてバーも揺れる
-      L.imp = Math.min(1, 0.45 + Math.abs(L.v || 0) / 1100); L.side = raw < (L.min + L.max) / 2 ? -1 : 1;
-      if (L.bar.animate) L.bar.animate([{ scale: '1 1' }, { scale: '1.022 .975' }, { scale: '1 1' }], { duration: 420, easing: 'cubic-bezier(.3,1.5,.4,1)' });
-      if (navigator.vibrate) { try { navigator.vibrate(8); } catch (_) { /* ignore */ } }
-    }
-    L.atEdge = edge;
+    tbMx(e);
+    const D = TB.drag;
+    if (!D || e.pointerId !== D.id) return;
+    if (!D.on) { if (Math.hypot(e.clientX - D.x0, e.clientY - D.y0) > 6) tbGrab(); else return; }
+    const raw = e.clientX - D.rect.left - D.grab, over = raw < D.min ? raw - D.min : raw > D.max ? raw - D.max : 0;
+    TB.over = over; TB.side = Math.sign(over);
+    TB.tx = tbClamp(raw, D.min, D.max) + Math.sign(over) * Math.min(12, Math.abs(over) * 0.25);   // 端ではゴムのように少しだけ伸びる
   });
-  function endLens(e) {
+  function tbRelease(e) {
     const bar0 = $('#tabs'); if (bar0) bar0.classList.remove('touch');
-    const L = lens;
-    if (!L || (e && e.pointerId !== L.id)) return;
-    lens = null;
-    clearTimeout(L.timer);
-    try { L.bar.releasePointerCapture(L.id); } catch (_) { /* ignore */ }
-    if (!L.on) return;
-    L_last = L;
+    const D = TB.drag;
+    if (!D || (e && e.pointerId !== D.id)) return;
+    TB.drag = null; clearTimeout(D.timer);
+    try { D.bar.releasePointerCapture(D.id); } catch (_) { /* ignore */ }
+    if (!D.on) return;                                            // 長押しになる前に離した＝ただのタップ
     suppressClickUntil = Date.now() + 350;
-    const target = L.tabs[L.hover] || L.tab;
-    // レンズは目的のタブへ吸い込まれるように収束
-    L.released = true; L.tx = target.offsetLeft + target.offsetWidth / 2;
-    // 影のサムは現在のレンズ位置から液体のように伸びて目的のタブへ
-    const th = $('#tthumb');
-    if (th) { th._x = L.cx - L.tab.offsetWidth / 2; th._y = L.tab.offsetTop; th._w = L.tab.offsetWidth; th._h = L.tab.offsetHeight; th.dataset.i = '1'; }
-    L.bar.classList.remove('drag');
-    L.tabs.forEach((t) => t.classList.remove('hov'));
-    L.imp = 0; L.over = 0;
-    // レンズが目的のタブへ収まったら、元の選択楕円の大きさへ「きゅっ」と縮んで溶け込む
-    setTimeout(() => {
-      L.nomask = true;
-      if (L.rm || !L.el.animate) { L.el.classList.remove('in'); return; }
-      const rx = target.offsetWidth / L.lw, ry = target.offsetHeight / L.lh;
-      L.el.animate([{ scale: '1 1', opacity: 1 }, { scale: `${rx * 1.24} ${ry * 1.34}`, opacity: 1, offset: 0.34 }, { scale: `${rx * 0.93} ${ry * 0.88}`, opacity: 0.92, offset: 0.66 }, { scale: `${rx} ${ry}`, opacity: 0 }], { duration: 680, easing: 'cubic-bezier(.3,.9,.3,1)', fill: 'forwards' });
-      L.lc.animate([{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(5px)' }], { duration: 300, fill: 'forwards' });
-      const th = $('#tthumb'); if (th) { th.classList.remove('settle'); void th.offsetWidth; th.classList.add('settle'); setTimeout(() => th.classList.remove('settle'), 900); }
-      if (L.bar.animate) L.bar.animate([{ scale: '1 1' }, { scale: '1.014 .986' }, { scale: '.998 1.004' }, { scale: '1 1' }], { duration: 560, easing: 'cubic-bezier(.3,1.3,.4,1)' });
-      target.classList.remove('pop'); void target.offsetWidth; target.classList.add('pop'); setTimeout(() => target.classList.remove('pop'), 700);
-    }, 170);
-    setTimeout(() => { L.dead = true; cancelAnimationFrame(L.raf); L.el.remove(); L.svg.remove(); if (L_last === L) L_last = null; }, 960);
-    const name = target.dataset.nav;
-    nav(name);
-    updateThumbs();
+    D.bar.classList.remove('drag');
+    const T = TB, g = T.geo[tbNearest(T.x + T.v * 0.09)];         // 勢いよく払った分も加味して、行き着くタブを決める
+    T.mode = 'settle'; T.tx = g.c; T.d0 = Math.abs(g.c - T.x); T.t0 = performance.now(); T.over = 0; T.side = 0; T.key = g.nav; T.tl = 1;
+    setTimeout(() => nav(g.nav), 60);                             // 画面の切り替えはレンズが動き出した直後に
+    tbRun();
   }
-  document.addEventListener('pointerup', endLens);
-  document.addEventListener('pointercancel', endLens);
+  document.addEventListener('pointerup', tbRelease);
+  document.addEventListener('pointercancel', tbRelease);
 
   window.addEventListener('resize', () => { const ph = app.classList.contains('phone'); if (ph !== isPhone()) { updateChrome(); if (conv.open) renderConv(); } if (layout() !== lastLay) applyLayout(); else updateThumbs(); });
   if ('speechSynthesis' in window) speechSynthesis.getVoices();
