@@ -308,7 +308,7 @@
     th.classList.remove('settle'); void th.offsetWidth; th.classList.add('settle'); setTimeout(() => th.classList.remove('settle'), 900);
   }
   function updateThumbs() {
-    tbPlace();
+    try { tbPlace(); } catch (err) { console.error('tab lens', err); }
     place($('#sthumb'), $('#sblist .sb-item.on'));
   }
   function updatePhbar() {
@@ -1178,7 +1178,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
 
   /* ---------------- 描画（iPadOS の Siri アプリ風）---------------- */
   const levelName = () => lvName(SIRI_SETTINGS().lv);
-  function cardHTML(c) {
+  function siriCardHTML(c) {
     const z = c.msgs.find((m) => m.r === 'z'), a = c.msgs.find((m) => m.r === 'a' && !m.err);
     const sn = z ? `${lvName(z.quiz.lv)}・${z.quiz.fmt === 'listening' ? 'リスニング' : 'リーディング'}` : stripMd(a ? a.t : (c.msgs[0] && c.msgs[0].t) || '');
     return `<button class="sr-card${c.id === SR.cur ? ' sel' : ''}${z ? ' quiz' : ''}" data-act="s:open" data-id="${c.id}"><small>${dateLabel(c.at)}</small><b>${esc(c.title)}</b><span>${esc(sn.slice(0, 80))}</span></button>`;
@@ -1283,7 +1283,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     let list = chatsOf();
     if (st.filter === 'quiz') list = list.filter((x) => x.msgs.some((m) => m.r === 'z'));
     else if (st.filter === 'ask') list = list.filter((x) => !x.msgs.some((m) => m.r === 'z'));
-    const cards = list.length ? list.map(cardHTML).join('') : `<p class="sr-none">${chatsOf().length ? '該当するチャットはありません' : 'チャットはまだありません'}</p>`;
+    const cards = list.length ? list.map(siriCardHTML).join('') : `<p class="sr-none">${chatsOf().length ? '該当するチャットはありません' : 'チャットはまだありません'}</p>`;
     const vocab = SR.panel === 'vocab';
     const main = vocab ? vocabPanelHTML() : (c && c.msgs.length) || SR.asking || SR.loading ? msgsHTML(c || { msgs: [] }) : welcomeHTML();
     const phoneTitle = vocab ? '単語帳' : (c ? c.title : newTitle);
@@ -1688,14 +1688,14 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
    * レンズの中身は「バーの複製」を屈折フィルタ（feDisplacementMap）に通したもの。複製の位置は毎フレーム
    * バーの座標から直接計算するので、本物のタブと必ず重なる。個別の scale プロパティで動かすことはしない。 */
   const reduceMotion = () => (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || !!(S.appear && S.appear.rm);
-  const TB = { th: null, gl: null, bar: null, bw: 0, geo: [], all: [], key: null, mode: 'idle', x: 0, v: 0, tx: 0, lift: 0, lv: 0, tl: 0, sj: 0, sjv: 0, over: 0, side: 0, hover: -1, t: 0, t0: 0, d0: 0, raf: 0, drag: null,
-    built: false, BW: 0, BH: 0, IW: 0, IH: 0, M: 20, lw: null, lc: null, cmap: null, lastBuild: 0, lastW: 0, seq: 0 };
+  const TB = { th: null, gl: null, bar: null, bw: 0, bh: 0, geo: [], all: [], key: null, mode: 'idle', x: 0, v: 0, tx: 0, lift: 0, lv: 0, tl: 0, sj: 0, sjv: 0, over: 0, side: 0, hover: -1, t: 0, t0: 0, d0: 0, raf: 0, drag: null,
+    built: false, BW: 0, BH: 0, IW: 0, IH: 0, M: 0, lw: null, lz: null, lc: null, cmap: null, lastBuild: 0, lastW: 0, seq: 0 };
   const tbClamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const TB_MAG = 1.12;   // ガラス越しの拡大率
+  const TB_MAG = 1.1;   // ガラス越しの拡大率
 
   function tbMeasure() {
     const bar = $('#tabs'); if (!bar) return false;
-    TB.bar = bar; TB.th = $('#tthumb'); TB.gl = $('#tlens'); TB.bw = bar.offsetWidth;
+    TB.bar = bar; TB.th = $('#tthumb'); TB.gl = $('#tlens'); TB.bw = bar.offsetWidth; TB.bh = bar.offsetHeight;
     TB.all = Array.from(bar.children).filter((t) => t.classList.contains('tab') && t.offsetParent !== null && t.offsetWidth > 0);   // レンズ内の複製は含めない
     TB.geo = TB.all.filter((t) => t.dataset.nav)
       .map((el) => ({ el, nav: el.dataset.nav, c: el.offsetLeft + el.offsetWidth / 2, w: el.offsetWidth, h: el.offsetHeight, y: el.offsetTop + el.offsetHeight / 2 }));
@@ -1712,12 +1712,12 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   }
   const tbNearest = (x) => { let k = 0; TB.geo.forEach((g, i) => { if (Math.abs(g.c - x) < Math.abs(TB.geo[k].c - x)) k = i; }); return k; };
   /* 持ち上がったガラスの大きさ：選択楕円よりひと回り大きく、バーの上下へ大きくはみ出す */
-  const tbLensSize = (z) => ({ w: z.w * 1.14 + 8, h: z.h * 1.22 + 10 });
+  const tbLensSize = (z) => ({ w: z.w + 36, h: TB.bh + 18 });
 
   /* 屈折マップ：カプセル形の縁ほど、レンズの「外側」の景色を内側へ圧縮して映す（feDisplacementMap に渡す） */
   function tbMap(bw, bh, M) {
     const sc = 2, W = bw + 2 * M, H = bh + 2 * M, cw = Math.ceil(W * sc), ch = Math.ceil(H * sc);
-    const r = bh * sc / 2, mx = M * sc, cy = ch / 2, bez = r * 0.55, x0 = mx + r, x1 = cw - mx - r;
+    const r = bh * sc / 2, mx = M * sc, cy = ch / 2, bez = r * 0.36, x0 = mx + r, x1 = cw - mx - r;
     const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
     const g = cv.getContext('2d'), img = g.createImageData(cw, ch), d = img.data;
     for (let y = 0; y < ch; y++) {
@@ -1725,8 +1725,8 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
         const px = Math.min(Math.max(x, x0), x1), dx = x - px, dy = y - cy, dist = Math.hypot(dx, dy), depth = r - dist;
         let ox = 0, oy = 0;
         if (depth >= 0 && depth < bez && dist > 0) {
-          const t = 1 - depth / bez, m = t * t * (3 - 2 * t) * 0.5 + t * t * t * t * 0.5;
-          ox = dx / dist * m; oy = dy / dist * m;
+          const t = 1 - depth / bez, m = t * t * (3 - 2 * t) * 0.6 + t * t * t * 0.4;
+          ox = -dx / dist * m; oy = -dy / dist * m;       // 縁ほど内容を内側へ引き込む
         }
         const i = (y * cw + x) * 4;
         d[i] = 128 + ox * 127; d[i + 1] = 128 + oy * 127; d[i + 2] = 128; d[i + 3] = 255;
@@ -1743,7 +1743,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     const ch = (c, sc) => `<feDisplacementMap in="SourceGraphic" in2="map" scale="${sc}" xChannelSelector="R" yChannelSelector="G" result="d${c}"/><feColorMatrix in="d${c}" type="matrix" values="${c === 'R' ? '1 0 0 0 0' : '0 0 0 0 0'} ${c === 'G' ? '0 1 0 0 0' : '0 0 0 0 0'} ${c === 'B' ? '0 0 1 0 0' : '0 0 0 0 0'} 0 0 0 1 0" result="c${c}"/>`;
     wrap.innerHTML = `<filter id="${id}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}" color-interpolation-filters="sRGB">
       <feImage href="${map}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" result="map"/>
-      ${ch('R', S)}${ch('G', Math.round(S * 1.03))}${ch('B', Math.round(S * 1.06))}
+      ${ch('R', S)}${ch('G', Math.round(S * 1.025))}${ch('B', Math.round(S * 1.05))}
       <feComposite in="cR" in2="cG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg"/>
       <feComposite in="rg" in2="cB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
     </filter>`;
@@ -1755,13 +1755,14 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     T.BW = ls.w; T.BH = ls.h; T.lastW = z.w;
     T.gl.innerHTML = '';
     const IW = Math.ceil(ls.w + 2 * M), IH = Math.ceil(ls.h + 2 * M), fid = 'tlf' + (++T.seq);
-    const S = Math.round(Math.min(M - 3, ls.h * 0.2) * 2);
+    const S = Math.round(ls.h * 0.78);
     const svg = tbFilter(fid, IW, IH, tbMap(ls.w, ls.h, M), S);
-    const lw = document.createElement('div'); lw.className = 'lw';
-    lw.style.cssText = `width:${IW}px;height:${IH}px;left:50%;top:50%;margin:${-IH / 2}px 0 0 ${-IW / 2}px;filter:url(#${fid})`;
+    const lz = document.createElement('div'); lz.className = 'lz';
+    lz.style.cssText = `width:${IW}px;height:${IH}px;left:50%;top:50%;margin:${-IH / 2}px 0 0 ${-IW / 2}px`;
+    const lw = document.createElement('div'); lw.className = 'lw'; lw.style.filter = `url(#${fid})`;
     const lc = document.createElement('div'); lc.className = 'lc';
     const cs = getComputedStyle(T.bar);
-    lc.style.cssText = `position:absolute;left:0;top:0;display:flex;align-items:center;pointer-events:none;transform-origin:0 0;width:${T.bar.offsetWidth}px;height:${T.bar.offsetHeight}px;padding:${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft};gap:${cs.columnGap}`;
+    lc.style.cssText = `position:absolute;left:0;top:0;display:flex;align-items:center;pointer-events:none;transform-origin:0 0;transform:scale(${TB_MAG});width:${T.bar.offsetWidth}px;height:${T.bar.offsetHeight}px;padding:${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft};gap:${cs.columnGap}`;
     T.cmap = {};
     T.all.forEach((tb) => {
       const k = tb.cloneNode(true);
@@ -1769,13 +1770,13 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       if (tb.dataset.nav) { k.dataset.cn = tb.dataset.nav; T.cmap[tb.dataset.nav] = k; }
       lc.appendChild(k);
     });
-    lw.appendChild(lc); T.gl.appendChild(svg); T.gl.appendChild(lw);
-    T.lw = lw; T.lc = lc; T.IW = IW; T.IH = IH; T.built = true; T.lastBuild = performance.now();
+    lw.appendChild(lc); lz.appendChild(lw); T.gl.appendChild(svg); T.gl.appendChild(lz);
+    T.lw = lw; T.lz = lz; T.lc = lc; T.IW = IW; T.IH = IH; T.built = true; T.lastBuild = performance.now();
   }
   function tbCleanup() {
     const T = TB;
     if (T.gl) T.gl.innerHTML = '';
-    T.built = false; T.lw = null; T.lc = null; T.cmap = null;
+    T.built = false; T.lw = null; T.lz = null; T.lc = null; T.cmap = null;
     T.all.forEach((tb) => { tb.style.webkitMaskImage = ''; tb.style.maskImage = ''; });
     T.geo.forEach((g) => g.el.style.removeProperty('--tt'));
   }
@@ -1802,9 +1803,9 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     T.gl.style.setProperty('--gx', (50 - tbClamp(T.v / 18, -45, 45)).toFixed(1) + '%');
     if (T.built) {
       const cxw = left + w / 2;
-      T.lw.style.transform = `scale(${(w / T.BW).toFixed(4)},${(h / T.BH).toFixed(4)})`;
-      T.lw.style.opacity = co.toFixed(3);
-      T.lc.style.transform = `translate(${T.IW / 2}px,${T.IH / 2}px) scale(${TB_MAG}) translate(${(-cxw).toFixed(2)}px,${(-z.y).toFixed(2)}px)`;
+      T.lz.style.transform = `scale(${(w / T.BW).toFixed(4)},${(h / T.BH).toFixed(4)})`;
+      T.lz.style.opacity = co.toFixed(3);
+      T.lc.style.left = (T.IW / 2 - TB_MAG * cxw).toFixed(2) + 'px'; T.lc.style.top = (T.IH / 2 - TB_MAG * z.y).toFixed(2) + 'px';
       const al = (1 - co).toFixed(3), a0 = left, b0 = left + w;  // レンズの下の本物のタブは、中身と入れ替わるように隠す
       T.all.forEach((tb) => {
         const a = Math.max(0, a0 - tb.offsetLeft), b = Math.min(tb.offsetWidth, b0 - tb.offsetLeft);

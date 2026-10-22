@@ -908,37 +908,33 @@ html.rm *,html.rm *::before,html.rm *::after{animation-duration:.01ms!important;
 /* ======================================================================
    タブバーの選択ガラス（iOS 26 / 27 の Liquid Glass タブバー）
    ・#tthumb（平らな選択楕円）と #tlens（持ち上がったガラス）は JS から同じ位置・同じ大きさを毎フレーム与えられる「ひとつの物体」。
-   ・レンズの中身（.lw > .lc）はバーの複製を屈折フィルタに通したもの。縁には外側の景色が圧縮されて映り、R/G/B がわずかにずれる。
+   ・レンズの中身（.lz > .lw > .lc）はバーの複製を屈折フィルタに通したもの。縁では内容が内側へ引き込まれ、R/G/B がわずかにずれる。
+     複製の位置は left/top（レイアウト）で動かす。transform を毎フレーム変えると Safari でフィルタ内が更新されず固まることがある。
    ・--tt（色の濃さ）は各タブがレンズからどれだけ近いかで連続的に変わる。
    ・CSS の transition / 個別の scale プロパティでレンズ自体を動かさない（transform と二重に掛かって位置がずれるため）。
    ====================================================================== */
+:root{--lensedge:.16}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--lensedge:.5}}
+:root[data-theme="dark"],.view-camera{--lensedge:.5}
 #tthumb{z-index:1;transition:none;will-change:transform,width,height,opacity;backface-visibility:hidden}
+/* ほぼ透明・縁だけ屈折・細い黒の縁取り */
 #tlens{position:absolute;left:0;top:0;z-index:4;pointer-events:none;border-radius:999px;opacity:0;overflow:hidden;isolation:isolate;
   will-change:transform,width,height,opacity;backface-visibility:hidden;
-  background:radial-gradient(90% 110% at var(--gx,50%) -45%,rgba(255,255,255,.13),rgba(255,255,255,0) 60%);
-  -webkit-backdrop-filter:blur(.3px) saturate(1.4) brightness(1.04);backdrop-filter:blur(.3px) saturate(1.4) brightness(1.04);
-  box-shadow:
-    0 calc(14px*var(--l,0)) calc(30px*var(--l,0)) rgba(0,0,0,.26),
-    0 calc(3px*var(--l,0)) calc(8px*var(--l,0)) rgba(0,0,0,.16),
-    0 0 0 1.2px rgba(0,0,0,.4),
-    inset 0 0 0 .75px rgba(255,255,255,.3),
-    inset 0 2px 3px -1px rgba(255,255,255,.5),
-    inset 0 -3px 5px -2px rgba(255,255,255,.3)}
-#tlens .lw{position:absolute;z-index:1;transform-origin:50% 50%;will-change:transform,opacity;pointer-events:none}
+  background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 28%,transparent 72%,rgba(255,255,255,.06)),rgba(255,255,255,.04);
+  -webkit-backdrop-filter:blur(.6px) saturate(1.35) brightness(1.05);backdrop-filter:blur(.6px) saturate(1.35) brightness(1.05);
+  box-shadow:0 0 0 .6px rgba(0,0,0,.5),
+    0 calc(10px*var(--l,0)) calc(26px*var(--l,0)) rgba(0,0,0,.22),0 calc(2px*var(--l,0)) calc(6px*var(--l,0)) rgba(0,0,0,.14),
+    inset 0 0 0 1px rgba(255,255,255,.16),inset 0 5px 7px -5px rgba(255,255,255,.45),inset 0 -5px 7px -5px rgba(255,255,255,.28)}
+#tlens .lz{position:absolute;transform-origin:50% 50%;will-change:transform,opacity;pointer-events:none}
+#tlens .lw{position:absolute;inset:0;overflow:hidden;border-radius:inherit}
 #tlens .lc .tab{pointer-events:none}
-/* ガラスの縁：黒い細い輪郭・屈折で暗くなる縁・青とオレンジの色ずれ */
-#tlens::before{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;pointer-events:none;
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.5),inset 0 0 9px 1px rgba(0,0,0,.3),inset 3px 3px 6px -3px rgba(90,160,255,.55),inset -3px -3px 6px -3px rgba(255,165,70,.5)}
-#tlens::after{content:"";position:absolute;inset:0;z-index:3;border-radius:inherit;padding:1.2px;pointer-events:none;opacity:.6;
-  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.08) 36%,rgba(255,255,255,.08) 64%,rgba(255,255,255,.7));
+/* 縁：上下が屈折で暗くなる・細い光の縁 */
+#tlens::before{content:"";position:absolute;inset:0;z-index:3;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,var(--lensedge)) 0,transparent 20%,transparent 80%,rgba(0,0,0,var(--lensedge)) 100%)}
+#tlens::after{content:"";position:absolute;inset:0;z-index:3;border-radius:inherit;padding:1.5px;pointer-events:none;opacity:.35;
+  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.08) 35%,rgba(255,255,255,.08) 65%,rgba(255,255,255,.6));
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
   mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #tlens{box-shadow:
-    0 calc(14px*var(--l,0)) calc(30px*var(--l,0)) rgba(0,0,0,.5),0 calc(3px*var(--l,0)) calc(8px*var(--l,0)) rgba(0,0,0,.3),0 0 0 1.4px rgba(0,0,0,.8),
-    inset 0 0 0 .75px rgba(255,255,255,.2),inset 0 2px 3px -1px rgba(255,255,255,.4),inset 0 -3px 5px -2px rgba(255,255,255,.22)}}
-:root[data-theme="dark"] #tlens,.view-camera #tlens{box-shadow:
-    0 calc(14px*var(--l,0)) calc(30px*var(--l,0)) rgba(0,0,0,.5),0 calc(3px*var(--l,0)) calc(8px*var(--l,0)) rgba(0,0,0,.3),0 0 0 1.4px rgba(0,0,0,.8),
-    inset 0 0 0 .75px rgba(255,255,255,.2),inset 0 2px 3px -1px rgba(255,255,255,.4),inset 0 -3px 5px -2px rgba(255,255,255,.22)}
 
 /* 動いている間：各タブ（とレンズ内の複製）の色を、レンズとの距離から決まる --tt で連続的に変える */
 #tabs.tbm .tab[data-nav],#tabs.tbm .tab[data-cn]{color:color-mix(in srgb,var(--teal) calc(var(--tt,0)*100%),var(--ink));
