@@ -27,12 +27,12 @@ jobs:
       - name: Web用ファイルをwwwフォルダにまとめる
         run: |
           mkdir -p www
-          rsync -av --progress . www --exclude .git --exclude .github --exclude www
+          rsync -av --progress . www --exclude .git --exclude .github --exclude www --exclude assets
 
       - name: CapacitorのインストールとAndroidプロジェクト生成
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.oa31.translate",
@@ -41,6 +41,7 @@ jobs:
           }
           EOF
           npx cap add android
+          npx capacitor-assets generate --android
 
       - name: APKのビルド実行
         run: |
