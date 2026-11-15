@@ -33,7 +33,13 @@ jobs:
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "" "com.oa31.translate" --web-dir="www"
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.oa31.translate",
+            "appName": "翻訳",
+            "webDir": "www"
+          }
+          EOF
           npx cap add android
 
       - name: APKのビルド実行
