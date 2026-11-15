@@ -65,7 +65,7 @@ svg{display:block}
   transition:opacity .25s;will-change:transform,width,height}
 
 /* ============ Sidebar ============ */
-#sidebar{flex:none;width:300px;margin:max(12px,env(safe-area-inset-top)) 0 max(12px,env(safe-area-inset-bottom)) 12px;
+#sidebar{flex:none;width:300px;margin:max(12px,var(--safe-area-inset-top,env(safe-area-inset-top,0px))) 0 max(12px,var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px))) 12px;
   border-radius:36px;overflow:hidden;z-index:6}
 .ready #sidebar{transition:width .6s var(--ease),margin .6s var(--ease),opacity .4s,transform .6s var(--ease),filter .5s}
 .lay-tabbar #sidebar{width:0;margin-left:0;opacity:0;transform:translateX(-40px) scale(.96);filter:blur(10px);pointer-events:none}
@@ -87,7 +87,7 @@ svg{display:block}
 /* ============ Main / floating toolbar ============ */
 #main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
 #topbar{position:absolute;left:0;right:0;top:0;z-index:7;display:flex;align-items:flex-start;justify-content:center;pointer-events:none;
-  padding-top:calc(10px + env(safe-area-inset-top));height:calc(90px + env(safe-area-inset-top))}
+  padding-top:calc(10px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)));height:calc(90px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
 #topbar::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(var(--bg) 25%,transparent);opacity:.72;pointer-events:none}
 .view-camera #topbar::before{display:none}
 .tabs,.more-btn{pointer-events:auto}
@@ -98,13 +98,13 @@ svg{display:block}
 .tab.on{color:var(--teal)}
 .tab-ic{padding:11px 15px}
 .tab-ic svg{width:21px;height:21px}
-.more-btn{position:absolute;right:16px;top:calc(10px + env(safe-area-inset-top));width:50px;height:50px;border-radius:50%;display:grid;place-items:center;
+.more-btn{position:absolute;right:16px;top:calc(10px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)));width:50px;height:50px;border-radius:50%;display:grid;place-items:center;
   transition:opacity .3s,scale .4s var(--spring)}
 .more-btn svg{width:22px;height:22px}
 .view-camera .more-btn{opacity:0;pointer-events:none}
 
 #content{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding:calc(78px + env(safe-area-inset-top)) 18px max(28px,env(safe-area-inset-bottom));
+  padding:calc(78px + var(--safe-area-inset-top,env(safe-area-inset-top,0px))) 18px max(28px,var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));
   user-select:text;-webkit-user-select:text}
 #content.enter>*{animation:viewIn .55s var(--ease) both}
 @keyframes viewIn{from{opacity:0;transform:translateY(16px) scale(.985);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
@@ -193,7 +193,7 @@ svg{display:block}
 #full{position:fixed;inset:0;z-index:90;background:var(--card);display:flex;align-items:center;justify-content:center;
   padding:60px 6vw;animation:zoomIn .5s var(--ease) both;user-select:text}
 #full .big{font-size:clamp(40px,7vw,96px);font-weight:700;color:var(--teal);text-align:center;line-height:1.3;max-width:100%;word-break:break-word}
-#full .x{position:absolute;right:20px;top:calc(18px + env(safe-area-inset-top));width:50px;height:50px;border-radius:50%;display:grid;place-items:center}
+#full .x{position:absolute;right:20px;top:calc(18px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)));width:50px;height:50px;border-radius:50%;display:grid;place-items:center}
 #full .x svg{width:20px;height:20px}
 @keyframes zoomIn{from{opacity:0;scale:.9;filter:blur(10px)}to{opacity:1;scale:1;filter:none}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
@@ -236,17 +236,17 @@ svg{display:block}
 #camov{position:absolute;inset:0;pointer-events:none}
 .ov{position:absolute;background:#f8caa6;color:#2b1a0e;border-radius:6px;display:flex;align-items:center;justify-content:center;
   text-align:center;line-height:1.1;font-weight:500;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.25);padding:0 4px;white-space:nowrap;animation:fade .35s both}
-.cam-hint{position:absolute;top:calc(22px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:calc(13px*var(--ts,1));background:rgba(70,70,72,.62);
+.cam-hint{position:absolute;top:calc(22px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)));left:50%;transform:translateX(-50%);font-size:calc(13px*var(--ts,1));background:rgba(70,70,72,.62);
   color:#fff;padding:4px 12px;border-radius:7px;white-space:nowrap;z-index:2}
-.lay-tabbar .cam-hint{top:calc(88px + env(safe-area-inset-top))}
-.cam-ctl{position:absolute;right:max(26px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:22px;z-index:3;align-items:center}
+.lay-tabbar .cam-hint{top:calc(88px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
+.cam-ctl{position:absolute;right:max(26px,var(--safe-area-inset-right,env(safe-area-inset-right,0px)));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:22px;z-index:3;align-items:center}
 .cam-ctl button{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:#fff}
 .cam-ctl button svg{width:26px;height:26px}
 .cam-ctl .shutter{width:68px;height:68px}
 .cam-ctl .shutter i{display:block;width:44px;height:44px;border-radius:50%;background:transparent;transition:background .25s,scale .4s var(--spring)}
 .cam-ctl .shutter.paused i{background:#fff}
 .cam-ctl .torch.on{background:#fff;color:#111}
-.cam-langs{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:6px;z-index:3;
+.cam-langs{position:absolute;left:50%;bottom:calc(22px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));transform:translateX(-50%);display:flex;align-items:center;gap:6px;z-index:3;
   border-radius:999px;padding:10px 18px;color:#fff}
 .cam-langs .lang-sel{font-size:calc(15px*var(--ts,1));font-weight:600}
 .cam-langs .lang-sel svg{color:rgba(255,255,255,.7)}
@@ -257,13 +257,13 @@ svg{display:block}
   box-shadow:0 18px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10%;padding:8%}
 .demo-sign svg{width:78%;color:#fff}
 .demo-sign .ov{left:3%;right:3%;top:17%;height:9%;font-size:calc(15px*var(--ts,1))}
-.demo-note{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);font-size:calc(12px*var(--ts,1));background:rgba(0,0,0,.55);padding:4px 12px;border-radius:7px;white-space:nowrap}
+.demo-note{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);font-size:calc(12px*var(--ts,1));background:rgba(0,0,0,.55);padding:6px 14px;border-radius:9px;width:max-content;max-width:min(92%,520px);text-align:center;line-height:1.4}
 
 /* ============ Conversation ============ */
 #conv{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;animation:zoomIn .55s var(--ease) both;user-select:none}
 .cv-half{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;padding:20px 28px 110px}
-.cv-half.top{transform:rotate(180deg);padding-top:calc(20px + env(safe-area-inset-bottom))}
-.cv-half.bot{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.cv-half.top{transform:rotate(180deg);padding-top:calc(20px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
+.cv-half.bot{padding-bottom:calc(110px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
 .cv-msgs{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding:6px 0}
 .cv-msgs>:first-child{margin-top:auto}
 .msg{display:flex;align-items:center;gap:10px;margin-bottom:12px;animation:cardIn .5s var(--spring) both}
@@ -275,16 +275,16 @@ svg{display:block}
 .cv-in{align-self:flex-end;width:min(48%,380px);background:var(--card);border-radius:24px;padding:10px 18px 12px;margin-top:6px}
 .cv-in input{display:block;width:100%;border:0;outline:none;background:none;font:inherit;font-size:calc(22px*var(--ts,1));font-weight:600;color:var(--ink);padding:2px 0 0;user-select:text;-webkit-user-select:text}
 .cv-in input::placeholder{color:var(--ph)}
-.cv-mic{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));margin-left:-34px;width:68px;height:68px;border-radius:50%;
+.cv-mic{position:absolute;left:50%;bottom:calc(26px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));margin-left:-34px;width:68px;height:68px;border-radius:50%;
   background:#a8d3df;border:5px solid #5aa9bf;display:grid;place-items:center;color:#fff;box-shadow:0 4px 18px rgba(63,159,189,.35)}
 .cv-mic svg{width:30px;height:30px}
 .cv-mic.rec{animation:pulse 1.2s infinite;background:#5aa9bf}
 .cv-mid{position:relative;height:1px;margin:0 90px;background:#bdbdc3;flex:none}
 .cv-mid .swap{background:var(--glass)}
 .cv-x,.cv-more{position:absolute;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;z-index:3}
-.cv-x{right:22px;top:calc(18px + env(safe-area-inset-top))}
+.cv-x{right:22px;top:calc(18px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
 .cv-x svg{width:22px;height:22px}
-.cv-more{right:26px;bottom:calc(22px + env(safe-area-inset-bottom));color:var(--teal)}
+.cv-more{right:26px;bottom:calc(22px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));color:var(--teal)}
 .cv-more svg{width:22px;height:22px}
 @media (max-width:700px){.cv-in{width:70%}.bub{font-size:calc(19px*var(--ts,1))}}
 
@@ -309,7 +309,7 @@ svg{display:block}
 
 
 /* ============ 会話：タブバーとサイドバーを残したまま表示 ============ */
-#conv{position:absolute!important;inset:0!important;z-index:5!important;padding-top:calc(74px + env(safe-area-inset-top))}
+#conv{position:absolute!important;inset:0!important;z-index:5!important;padding-top:calc(74px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
 .cv-x{display:none!important}
 
 /* ============ ポップアップ：角丸・長押しで出る薄い楕円 ============ */
@@ -333,10 +333,10 @@ svg{display:block}
 .tab-ic svg{width:32px;height:32px}
 .more-btn{width:58px;height:58px}
 .more-btn svg{width:26px;height:26px}
-#topbar{height:calc(100px + env(safe-area-inset-top))}
-#content{padding-top:calc(88px + env(safe-area-inset-top))}
-#conv{padding-top:calc(86px + env(safe-area-inset-top))!important}
-.lay-tabbar .cam-hint{top:calc(96px + env(safe-area-inset-top))}
+#topbar{height:calc(100px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
+#content{padding-top:calc(88px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
+#conv{padding-top:calc(86px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))!important}
+.lay-tabbar .cam-hint{top:calc(96px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
 @media (max-width:700px){.tab{padding:11px 13px;font-size:calc(16px*var(--ts,1))}.tab-ic{padding:11px 13px}.tab-ic svg{width:26px;height:26px}.more-btn{width:50px;height:50px}.more-btn svg{width:22px;height:22px}}
 
 /* レンズ内：はみ出しをクリップして Safari のフィルタ基準位置がずれないようにする */
@@ -359,7 +359,7 @@ svg{display:block}
 .tic{display:none}
 .phbar{display:none}
 .phone .phbar{display:flex;position:absolute;left:0;right:0;top:0;z-index:8;align-items:center;justify-content:space-between;pointer-events:none;
-  padding:calc(env(safe-area-inset-top) + 0px) 16px 0;height:calc(env(safe-area-inset-top) + 56px)}
+  padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 0px) 16px 0;height:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 56px)}
 .phone .phbar.off{display:none}
 .phone .phbar>*{pointer-events:auto}
 .ph-circ,.ph-pill{height:44px;border-radius:999px;display:grid;place-items:center;color:var(--ink);
@@ -372,7 +372,7 @@ svg{display:block}
 .phone .ph-large{display:block;font-size:calc(34px*var(--ts,1));font-weight:800;letter-spacing:.01em;margin:6px 4px 12px}
 
 /* 下部のタブバー（Liquid Glass）*/
-.phone #topbar{top:auto;bottom:0;height:auto;padding:0 0 max(12px,calc(env(safe-area-inset-bottom) - 13px));align-items:flex-end}
+.phone #topbar{top:auto;bottom:0;height:auto;padding:0 0 max(12px,calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) - 13px));align-items:flex-end}
 .phone #topbar::before{display:none}
 .phone .more-btn,.phone .tab-ic,.phone .tab[data-nav="fav"]{display:none!important}
 .phone .tabs{padding:4px;gap:0;border-radius:999px}
@@ -385,7 +385,7 @@ svg{display:block}
 :root[data-theme="light"] .phone .thumb{background:rgba(0,0,0,.07)}
 
 /* コンテンツ */
-.phone #content{padding:calc(env(safe-area-inset-top) + 58px) 16px calc(112px + env(safe-area-inset-bottom))}
+.phone #content{padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 58px) 16px calc(112px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
 .phone .card{grid-template-columns:1fr;border-radius:34px;margin-bottom:14px}
 .phone .half{padding:18px 22px 14px 26px}
 .phone .half.r{padding-left:26px;padding-top:14px}
@@ -402,11 +402,11 @@ svg{display:block}
 /* カメラ：上に余白・縦長プレビュー・下に操作ボタン */
 .phone.view-camera #content{background:#121212}
 .phone #cam{background:#121212}
-.phone #cam video,.phone #cam #camimg{inset:auto;left:0;top:calc(env(safe-area-inset-top) + 86px);width:100%;height:calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 254px)}
-.phone #camdemo{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 86px);bottom:calc(env(safe-area-inset-bottom) + 168px);overflow:hidden}
-.phone .cam-hint{top:calc(env(safe-area-inset-top) + 86px + 24px);font-size:calc(14px*var(--ts,1));padding:6px 16px;border-radius:999px;background:rgba(70,60,62,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
-.phone .cam-langs{bottom:calc(env(safe-area-inset-bottom) + 168px + 14px);background:rgba(70,60,62,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
-.phone .cam-ctl{left:0;right:0;top:auto;bottom:calc(env(safe-area-inset-bottom) + 88px);transform:none;flex-direction:row;justify-content:space-between;padding:0 34px;gap:0}
+.phone #cam video,.phone #cam #camimg{inset:auto;left:0;top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 86px);width:100%;height:calc(100% - var(--safe-area-inset-top,env(safe-area-inset-top,0px)) - var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) - 254px)}
+.phone #camdemo{position:absolute;left:0;right:0;top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 86px);bottom:calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 168px);overflow:hidden}
+.phone .cam-hint{top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 86px + 24px);font-size:calc(14px*var(--ts,1));padding:6px 16px;border-radius:999px;background:rgba(70,60,62,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.phone .cam-langs{bottom:calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 168px + 14px);background:rgba(70,60,62,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.phone .cam-ctl{left:0;right:0;top:auto;bottom:calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 88px);transform:none;flex-direction:row;justify-content:space-between;padding:0 34px;gap:0}
 .phone .cam-ctl button{width:46px;height:46px;background:rgba(255,255,255,.14)}
 .phone .cam-ctl .shutter{width:64px;height:64px;background:rgba(255,255,255,.16);box-shadow:0 0 0 1px rgba(255,255,255,.1) inset}
 .phone .cam-ctl .shutter i{width:42px;height:42px;box-shadow:0 0 0 3px #fff inset;border-radius:50%}
@@ -414,9 +414,9 @@ svg{display:block}
 .phone .cam-ctl button svg{width:24px;height:24px}
 
 /* 会話：1列表示（吹き出し入力＋中央のマイク） */
-.phone #conv{padding-top:calc(env(safe-area-inset-top) + 56px)!important}
+.phone #conv{padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 56px)!important}
 #conv.single{padding-bottom:0}
-.cv-single{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;padding:0 16px calc(env(safe-area-inset-bottom) + 176px)}
+.cv-single{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;padding:0 16px calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 176px)}
 .cv-single .cv-msgs{flex:1;min-height:0;overflow-y:auto;padding:8px 0}
 .smsg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;animation:cardIn .5s var(--spring) both;position:relative}
 .smsg.r{align-items:flex-end}.smsg.l{align-items:flex-start}
@@ -433,12 +433,12 @@ svg{display:block}
 .cv-single .cv-in.l::after{left:-26px;width:26px;background:var(--bg);border-bottom-right-radius:10px}
 .cv-single .cv-in .lang-sel{font-size:calc(16px*var(--ts,1));font-weight:700}
 .cv-single .cv-in input{font-size:calc(26px*var(--ts,1));font-weight:700}
-.cv-mic.single{bottom:calc(env(safe-area-inset-bottom) + 86px);width:64px;height:64px;margin-left:-32px;background:var(--teal);border:1px solid rgba(255,255,255,.35);color:#000;box-shadow:0 0 18px rgba(98,211,225,.3)}
+.cv-mic.single{bottom:calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 86px);width:64px;height:64px;margin-left:-32px;background:var(--teal);border:1px solid rgba(255,255,255,.35);color:#000;box-shadow:0 0 18px rgba(98,211,225,.3)}
 .cv-mic.single svg{width:28px;height:28px}
 .phone #conv.single .cv-more,.phone #conv.single .cv-x{display:none}
 .phone .cam-langs .lang-sel,.phone .cam-hint{white-space:nowrap}
 .phone .cam-langs{padding:9px 16px;gap:4px}
-.phone #toast{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)}
+.phone #toast{bottom:auto;top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 64px)}
 .phone .cv-single .cv-in input{min-width:0}
 
 /* ======================================================================
@@ -551,7 +551,7 @@ svg{display:block}
 .askbar textarea{flex:1;min-width:0;max-height:140px;font-size:calc(16px*var(--ts,1));line-height:1.5;padding:8px 0;color:var(--ink);resize:none;background:none}
 .send{flex:none;width:40px;height:40px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center}
 .send svg{width:20px;height:20px}.send:disabled{opacity:.5}
-.phone .askbar{bottom:calc(102px + env(safe-area-inset-bottom))}
+.phone .askbar{bottom:calc(102px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
 .phone .siri-hd{margin-top:2px}
 .phone .tab{width:76px}
 .phone .flash{height:260px}
@@ -561,7 +561,7 @@ svg{display:block}
 .tab[data-nav="siri"] .tic svg{width:32px;height:32px;margin:-1px 0}
 .askbar textarea{background:none}
 .phone .siri-hd{gap:12px}
-@media (max-width:699px){#toast{bottom:auto;top:calc(env(safe-area-inset-top) + 64px)}}
+@media (max-width:699px){#toast{bottom:auto;top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 64px)}}
 
 
 /* ======================================================================
@@ -570,7 +570,7 @@ svg{display:block}
 .view-siri #content{padding:0!important;overflow:hidden}
 .view-siri #topbar{pointer-events:none}.view-siri .tabs,.view-siri .more-btn{pointer-events:auto}
 .sr{position:absolute;inset:0;display:flex}
-.sr-side{flex:none;width:292px;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 12px) 0 0 14px;overflow:hidden;position:relative}
+.sr-side{flex:none;width:292px;display:flex;flex-direction:column;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 12px) 0 0 14px;overflow:hidden;position:relative}
 .sr-bar{display:flex;justify-content:space-between;align-items:center;padding:0 12px 10px 0}
 .sr-bar .sr-circ:first-child{order:2}.sr-bar .sr-circ:last-child{order:1}
 .sr-circ{position:relative;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
@@ -587,7 +587,7 @@ svg{display:block}
 .sr-card.sel{box-shadow:0 0 0 2.5px #3a8dff inset}
 .sr-main{flex:1;min-width:0;position:relative;display:flex;flex-direction:column}
 .sr-top{display:none}
-.sr-scroll{flex:1;overflow-y:auto;padding:calc(env(safe-area-inset-top) + 84px) 24px 150px;-webkit-overflow-scrolling:touch}
+.sr-scroll{flex:1;overflow-y:auto;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 84px) 24px 150px;-webkit-overflow-scrolling:touch}
 .sr-col{max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .m-u{display:flex;justify-content:flex-end}
 .m-u>div{position:relative;max-width:78%;background:rgba(120,120,128,.2);border-radius:20px;padding:10px 16px;font-size:calc(16px*var(--ts,1));line-height:1.5;white-space:pre-wrap;word-break:break-word}
@@ -607,7 +607,7 @@ svg{display:block}
 .sr-welcome>p{color:var(--sub);font-size:calc(15px*var(--ts,1));line-height:1.7;margin:0 0 18px}
 .sr-quick{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
 .sr-welcome .suggs{max-width:520px;margin:0 auto}
-.sr-comp{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 18px);display:flex;align-items:flex-end;gap:10px;max-width:760px;margin:0 auto;padding:0 20px}
+.sr-comp{position:absolute;left:0;right:0;bottom:calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 18px);display:flex;align-items:flex-end;gap:10px;max-width:760px;margin:0 auto;padding:0 20px}
 .sr-comp .sr-circ{width:46px;height:46px}
 .sr-input{flex:1;min-width:0;border-radius:26px;padding:12px 18px;min-height:46px;display:flex;align-items:center;position:relative}
 .sr-input textarea{width:100%;font-size:calc(16px*var(--ts,1));line-height:1.45;color:var(--ink);background:none;border:0;outline:0;resize:none;font-family:inherit;max-height:140px;display:block}
@@ -626,11 +626,11 @@ svg{display:block}
   .sr-title{font-size:calc(34px*var(--ts,1))}
   .sr-main{position:absolute;inset:0;background:var(--bg)}
   .sr.pane-list .sr-main{display:none}.sr.pane-chat .sr-side{display:none}
-  .sr-top{display:flex;align-items:center;justify-content:space-between;gap:10px;position:absolute;left:0;right:0;top:0;z-index:4;padding:calc(env(safe-area-inset-top) + 0px) 16px 0;height:calc(env(safe-area-inset-top) + 58px)}
+  .sr-top{display:flex;align-items:center;justify-content:space-between;gap:10px;position:absolute;left:0;right:0;top:0;z-index:4;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 0px) 16px 0;height:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 58px)}
   .sr-top b{flex:1;text-align:center;font-size:calc(16px*var(--ts,1));font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .sr-scroll{padding:calc(env(safe-area-inset-top) + 66px) 16px calc(206px + env(safe-area-inset-bottom))}
-  .sr-comp{bottom:calc(98px + env(safe-area-inset-bottom));padding:0 16px}
-  .sr.is-vocab .sr-scroll{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+  .sr-scroll{padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 66px) 16px calc(206px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
+  .sr-comp{bottom:calc(98px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));padding:0 16px}
+  .sr.is-vocab .sr-scroll{padding-bottom:calc(120px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
   .sr-cards{padding-bottom:130px}
 }
 
@@ -643,7 +643,7 @@ svg{display:block}
 .st-wrap.back{animation-name:stInB}
 @keyframes stIn{from{opacity:.4;transform:translateX(28px)}to{opacity:1;transform:none}}
 @keyframes stInB{from{opacity:.4;transform:translateX(-28px)}to{opacity:1;transform:none}}
-.st-bar{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 12px) 18px 10px;flex:none}
+.st-bar{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 12px) 18px 10px;flex:none}
 .st-bar b{font-size:calc(19px*var(--ts,1));font-weight:700}
 .st-circ{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:var(--ink)}
 .st-circ.ghost{background:none;box-shadow:none;visibility:hidden}.st-circ.ghost::after{display:none}
@@ -770,7 +770,7 @@ html.rm .st-sw i,html.rm .st-sw i::after{transition-duration:.01s}
 .av-r.word .wl{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .av-r.word .pos{display:inline;background:none;padding:0;margin:0;border-radius:0;color:var(--sub);font-style:normal;font-weight:500}
 .av-r.word .tx small{font-weight:400;display:block}
-@media (max-width:699px){.sr.is-vocab .sr-top{display:none}.sr.is-vocab .sr-scroll{padding-top:calc(env(safe-area-inset-top) + 12px)}}
+@media (max-width:699px){.sr.is-vocab .sr-top{display:none}.sr.is-vocab .sr-scroll{padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 12px)}}
 
 /* ======================================================================
    ポップアップメニュー：iPadOS 本家に寄せた質感・余白・アイコン配置

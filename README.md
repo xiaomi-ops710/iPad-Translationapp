@@ -28,6 +28,22 @@
 
 パスはすべて相対指定なので、サブパス配下でもそのまま動作します。更新を配信するときは `sw.js` の `VERSION` を上げてください。
 
+## Android（APK）
+`main` に push（または Actions の「Run workflow」）すると、`.github/workflows/build-apk.yml` が Capacitor で APK を作ります。成果物は Actions の Artifacts（`app-apk`）です。
+
+- **アイコン**: `assets/icon-only.png`（1024×1024）を差し替えるだけで反映されます。`tools/make_android_icons.py` が Android 8 以降のアダプティブアイコン／旧端末用アイコン／起動画面の色を生成します（角が白い角丸正方形の画像でもそのまま使えます）。`@capacitor/assets` は使いません（`icon-only.png` だけだとアダプティブアイコンが Capacitor 既定のまま残るため）。
+- **権限**: カメラ・マイクの権限を `tools/patch_android_manifest.py` でマニフェストに追加します。初回のカメラ表示時に許可ダイアログが出ます。拒否した場合は、端末の設定で許可してからシャッターボタンで再試行できます。
+- **戻るボタン**: 開いているメニュー／シート／設定 → 会話 → Siri の階層 → 翻訳画面 の順に戻り、最後にアプリを終了します（`@capacitor/app`）。
+- **Capacitor はメジャー 8 に固定**しています（9 以降は Node 24 以上などが必要なため、勝手に上がらないようにしています）。上げるときは Node／JDK も合わせて確認してください。
+- **端末のデータを残したまま更新するには（推奨）**: デバッグ署名はビルドごとに変わるため、上書きインストールできず、アンインストールすると API キー・履歴・お気に入りも消えます。固定の署名キーを一度だけ作り、GitHub の Secrets に登録してください。
+  1. `keytool -genkeypair -v -keystore release.jks -alias translate -keyalg RSA -keysize 2048 -validity 36500`
+  2. `base64 -w0 release.jks`（macOS は `base64 -i release.jks`）の出力を Secret `ANDROID_KEYSTORE_BASE64` に登録
+  3. Secret `ANDROID_KEYSTORE_PASSWORD`（キーストアのパスワード）と `ANDROID_KEY_ALIAS`（上の例では `translate`）を登録。キーのパスワードを別にした場合のみ `ANDROID_KEY_PASSWORD` も登録
+  4. `release.jks` は紛失・流出に注意して保管し、リポジトリにはコミットしないでください。紛失すると同じ署名で更新できなくなります。
+  
+  Secrets が無い場合は従来どおりデバッグ署名でビルドします。署名を切り替える最初の1回だけ、既存のアプリのアンインストールが必要です。
+- `versionCode` はビルド番号（`github.run_number`）で自動的に増えます。
+
 ## 注意
 - 実際の Gemini API・実機カメラ・音声入力/読み上げはこの環境では未検証です（API 通信はモックで検証）。
 - iOS のホーム画面アプリでは Web Speech の音声入力が使えない場合があります（キー入力は可）。

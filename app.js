@@ -70,6 +70,18 @@
     clearTimeout(toastT);
     toastT = setTimeout(() => t.classList.remove('show'), 2200);
   }
+  // 通信にタイムアウトを付ける（モバイル回線で応答が来ないまま「…」で固まるのを防ぐ）。
+  // タイムアウトは Error('timeout') で拒否し、ユーザー操作による中断（AbortError）と区別する。
+  function fetchT(url, o = {}, ms = 25000) {
+    const ctl = new AbortController();
+    let timedOut = false;
+    const to = setTimeout(() => { timedOut = true; ctl.abort(); }, ms);
+    const ext = o.signal;
+    if (ext) { if (ext.aborted) ctl.abort(); else ext.addEventListener('abort', () => ctl.abort(), { once: true }); }
+    return fetch(url, Object.assign({}, o, { signal: ctl.signal }))
+      .catch((e) => { if (timedOut) throw new Error('timeout'); throw e; })
+      .finally(() => clearTimeout(to));
+  }
   function decode(s) { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
   function chunk(text, max = 450) {
     const parts = text.split(/(?<=[.!?。！？\n])\s*/).filter(Boolean);
@@ -110,11 +122,11 @@
       if (mode === 0) gc.thinkingConfig = { thinkingLevel: 'minimal' };
       else if (mode === 1) gc.thinkingConfig = { thinkingLevel: 'low' };
       else if (mode === 2) gc.thinkingConfig = { thinkingBudget: 0 };
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.trim())}:streamGenerateContent?alt=sse`, {
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.trim())}:streamGenerateContent?alt=sse`, {
         method: 'POST', signal: o.signal,
         headers: { 'content-type': 'application/json', 'x-goog-api-key': key.trim() },
         body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: [{ text }] }], generationConfig: gc })
-      });
+      }, 25000);
       if (!r.ok) {
         const body = await r.text().catch(() => '');
         if (r.status === 400 && mode < 3 && /think/i.test(body)) { mode++; continue; }
@@ -146,7 +158,7 @@
     const pair = `${detect ? 'Autodetect' : LB[src].api}|${LB[tgt].api}`;
     const out = [];
     for (const c of chunk(text)) {
-      const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(c)}&langpair=${encodeURIComponent(pair)}`);
+      const r = await fetchT(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(c)}&langpair=${encodeURIComponent(pair)}`, {}, 15000);
       if (!r.ok) throw new Error('http ' + r.status);
       const j = await r.json();
       const tx = j && j.responseData && j.responseData.translatedText;
@@ -175,7 +187,8 @@
     } else if (!hinted) { hinted = true; toast('「…」→「AI翻訳の設定」で Gemini の API キーを入れると高速になります'); }
     if (res == null) { res = await myMemory(text, src, tgt, detect); eng = '標準'; if (o.onChunk) o.onChunk(res); }
     lastInfo = { engine: eng, ms: performance.now() - t0 };
-    cache.set(key, { v: res, eng });
+    // AI 設定時に標準翻訳へフォールバックした結果は Gemini 用キーにキャッシュしない（一時的な失敗を固定しないため）
+    if (!ai || eng === 'Gemini') cache.set(key, { v: res, eng });
     return res;
   }
   function speak(text, code) {
@@ -602,7 +615,13 @@
 
   /* --------------------------------------------------------------- camera */
   let stream = null, paused = false, camBusy = false, camTimer = null, torchOn = false, photoMode = false, demo = false;
-  let worker = null, workerLang = null;
+  let worker = null, workerLang = null, camErr = '';
+  const CAM_MSG = {
+    denied: 'カメラの使用が許可されていません。端末の設定でカメラを許可してから、シャッターボタンで再試行してください',
+    none: 'カメラが見つかりません（デモ画面を表示しています）',
+    busy: 'カメラを開けませんでした。他のアプリが使用中かもしれません。シャッターボタンで再試行できます',
+    other: 'カメラを利用できないためデモ画面を表示しています。シャッターボタンで再試行できます'
+  };
   function camHTML() {
     return `<div id="cam">
       <video id="camv" playsinline muted autoplay></video><img id="camimg" alt="" hidden>
@@ -627,7 +646,7 @@
     updateCam();
     const v = $('#camv'); if (!v) return;
     if (paused) $('#shutter').classList.add('paused');
-    $('#camfile').addEventListener('change', onPhoto);
+    $('#camfile').onchange = onPhoto;   // 再試行で startCam が再実行されても二重登録しない
     if (photoMode) { $('#camimg').hidden = false; return; }
     try {
       if (!stream) {
@@ -640,10 +659,30 @@
       if (paused) vv.pause();
       scheduleScan(600);
     } catch (e) {
+      const nm = (e && e.name) || '';
+      camErr = (nm === 'NotAllowedError' || nm === 'SecurityError') ? 'denied' : (nm === 'NotFoundError' || nm === 'OverconstrainedError') ? 'none' : (nm === 'NotReadableError' || nm === 'AbortError') ? 'busy' : 'other';
       demo = true;
-      const d = $('#camdemo'); if (d) { d.hidden = false; $('#camv').hidden = true; showDemoOv(); }
+      const d = $('#camdemo');
+      if (d) { d.hidden = false; $('#camv').hidden = true; const nt = $('.demo-note', d); if (nt) nt.textContent = CAM_MSG[camErr]; showDemoOv(); }
     }
   }
+  // デモ画面からカメラを開き直す（許可ダイアログを出し直す／設定で許可した後の再試行）
+  function retryCam() {
+    const d = $('#camdemo'), v = $('#camv');
+    demo = false; camErr = '';
+    if (d) d.hidden = true; if (v) v.hidden = false;
+    const ov = $('#demoOv'); if (ov) ov.hidden = true;
+    clearOv(); toast('カメラを開いています…');
+    startCam();
+  }
+  // アプリがバックグラウンドへ回ったらカメラを手放し、戻ったら開き直す（Android で黒画面のまま固まるのを防ぐ）
+  document.addEventListener('visibilitychange', () => {
+    if (view !== 'camera') return;
+    if (document.hidden) {
+      clearTimeout(camTimer);
+      if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; torchOn = false; const tb = $('#torch'); if (tb) tb.classList.remove('on'); }
+    } else if (!photoMode && !demo && !stream) startCam();
+  });
   function stopCam() {
     clearTimeout(camTimer);
     if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
@@ -702,11 +741,11 @@
       if (mode === 0) gc.thinkingConfig = { thinkingLevel: still ? 'low' : 'minimal' };
       else if (mode === 1) gc.thinkingConfig = { thinkingLevel: 'low' };
       else if (mode === 2) gc.thinkingConfig = { thinkingBudget: 0 };
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.trim())}:generateContent`, {
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.trim())}:generateContent`, {
         method: 'POST', signal,
         headers: { 'content-type': 'application/json', 'x-goog-api-key': key.trim() },
         body: JSON.stringify({ contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/jpeg', data: b64 } }, { text: prompt }] }], generationConfig: gc })
-      });
+      }, 45000);
       if (!r.ok) {
         const body = await r.text().catch(() => '');
         if (r.status === 400 && /schema|propertyOrdering|responseSchema/i.test(body) && useSchema) { useSchema = false; continue; }
@@ -1015,9 +1054,9 @@
       else if (mode === 2) gc.thinkingConfig = { thinkingBudget: 0 };
       const body = { contents, generationConfig: gc };
       if (o.system) body.systemInstruction = { parts: [{ text: o.system }] };
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.trim())}:generateContent`, {
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.trim())}:generateContent`, {
         method: 'POST', signal: o.signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key.trim() }, body: JSON.stringify(body)
-      });
+      }, 70000);
       if (!r.ok) {
         const tx = await r.text().catch(() => '');
         if (r.status === 400 && useSchema && /schema|propertyOrdering|responseSchema|minItems|maxItems/i.test(tx)) { useSchema = false; continue; }
@@ -1603,7 +1642,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       case 'copy': { const h = itemOf(el); if (h) copyText(h.t); break; }
       case 'fav': { const h = itemOf(el); if (h) { h.fav = !h.fav; lastFav = h.fav ? h.id : null; save(); render(); lastFav = null; } break; }
       case 'closeFull': closeFull(); break;
-      case 'convclose': closeConv(); break;
+      case 'convclose': closeConv(); updateChrome(); break;
       case 'cmic': cmic(convSingle() ? (conv.side || 'a') : el.dataset.side); break;
       case 'cview': {
         const ck = (on) => (on ? `<span class="ck">${I.check}</span>` : '');
@@ -1618,7 +1657,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       }
       case 'shutter': {
         const v = $('#camv'), sh = $('#shutter');
-        if (demo) { toast('デモ画面では一時停止できません'); break; }
+        if (demo) { retryCam(); break; }
         paused = !paused;
         sh.classList.toggle('paused', paused);
         if (photoMode && !paused) { photoMode = false; $('#camimg').hidden = true; $('#camv').hidden = false; }
@@ -1935,9 +1974,41 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   document.addEventListener('pointerup', tbRelease);
   document.addEventListener('pointercancel', tbRelease);
 
+  /* Android（Capacitor）の戻るボタン。@capacitor/app の backButton を購読すると既定動作（履歴を戻る／終了）が無効になるので、
+   * 開いているメニュー・シート・設定 → 会話 → Siri の階層 → 翻訳画面 の順に戻り、何も無ければアプリを終了する。 */
+  function androidBack() {
+    if ($('#pop')) { closePop(); return true; }
+    if ($('#full')) { closeFull(); return true; }
+    if ($('#sheet')) { closeSheet(); return true; }
+    if ($('#settings')) { if (SET.stack.length > 1) { SET.stack.pop(); renderSettings('back'); } else closeSettings(); return true; }
+    if (conv.open) { closeConv(); updateChrome(); return true; }
+    if (view === 'siri') {
+      if (SR.study) { SR.study = null; siriRender(); return true; }
+      if (SR.panel === 'vocab') { SR.panel = 'chat'; siriRender(); return true; }
+      if (isPhone() && SR.pane === 'chat') { SR.pane = 'list'; stopScript(); siriRender(); return true; }
+    }
+    if (view !== 'translate') { nav('translate'); return true; }
+    return false;
+  }
+  (function () {
+    const cap = window.Capacitor, A = cap && cap.Plugins && cap.Plugins.App;
+    if (!A || !A.addListener) return;                      // ブラウザ／PWA、または @capacitor/app 未導入のときは何もしない
+    A.addListener('backButton', () => {
+      let handled = false;
+      try { handled = androidBack(); } catch (err) { console.error('back', err); }
+      if (!handled && A.exitApp) A.exitApp();
+    });
+  })();
+
   window.addEventListener('resize', () => { const ph = app.classList.contains('phone'); if (ph !== isPhone()) { updateChrome(); if (conv.open) renderConv(); } if (layout() !== lastLay) applyLayout(); else updateThumbs(); });
   if ('speechSynthesis' in window) speechSynthesis.getVoices();
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    if (isNativeApp) {   // APK ではファイルがアプリに同梱されているので Service Worker は不要。残っていれば解除して古いキャッシュを消す
+      navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+      if (window.caches) caches.keys().then((ks) => ks.filter((k) => k.startsWith('xlate-')).forEach((k) => caches.delete(k))).catch(() => {});
+    } else window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
 
   applyAppearance();
   render();
