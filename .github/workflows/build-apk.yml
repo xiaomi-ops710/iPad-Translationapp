@@ -24,15 +24,24 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Pythonライブラリのインストール (make_android_icons.py用)
+        run: |
+          pip install --break-system-packages numpy pillow scipy
+
       - name: Web用ファイルをwwwフォルダにまとめる
         run: |
           mkdir -p www
-          rsync -av --progress . www --exclude .git --exclude .github --exclude www --exclude assets
+          rsync -av --progress . www \
+            --exclude .git \
+            --exclude .github \
+            --exclude www \
+            --exclude assets \
+            --exclude tools
 
       - name: CapacitorのインストールとAndroidプロジェクト生成
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
+          npm install @capacitor/core @capacitor/cli @capacitor/android
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.oa31.translate",
@@ -41,7 +50,14 @@ jobs:
           }
           EOF
           npx cap add android
-          npx capacitor-assets generate --android
+
+      - name: アプリアイコンの生成 (make_android_icons.py)
+        run: |
+          python3 tools/make_android_icons.py
+
+      - name: カメラ・マイク権限の追加 (patch_android_manifest.py)
+        run: |
+          python3 tools/patch_android_manifest.py
 
       - name: APKのビルド実行
         run: |
