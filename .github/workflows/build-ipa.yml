@@ -1,0 +1,129 @@
+name: Build iOS IPA (AltStore)
+
+on:
+  workflow_dispatch:   # Actions タブの「Run workflow」で手動実行
+
+concurrency:
+  group: build-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: リポジトリのコードを取得
+        uses: actions/checkout@v4
+
+      - name: Node.jsのセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pythonのセットアップ（アイコン生成用）
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Xcodeのバージョンを表示
+        run: xcodebuild -version
+
+      - name: Web用ファイルをwwwフォルダにまとめる
+        run: |
+          set -euo pipefail
+          mkdir -p www
+          rsync -a . www \
+            --exclude .git --exclude .github --exclude www --exclude assets --exclude tools \
+            --exclude android --exclude node_modules --exclude dist \
+            --exclude package.json --exclude package-lock.json --exclude capacitor.config.json \
+            --exclude README.md --exclude '*.patch'
+          ls -la www
+
+      # Capacitor はメジャーを 8 に固定する（固定しないと、新しいメジャー版でこのビルドが壊れる恐れがある）
+      - name: CapacitorのインストールとiOSプロジェクト生成
+        run: |
+          set -euo pipefail
+          npm init -y
+          npm install --no-audit --no-fund @capacitor/core@8 @capacitor/cli@8 @capacitor/ios@8
+          cat << 'EOF2' > capacitor.config.json
+          {
+            "appId": "com.oa31.translate",
+            "appName": "翻訳",
+            "webDir": "www"
+          }
+          EOF2
+          npx cap add ios
+
+      # iOS のアプリアイコンは「不透明・角なし・1024×1024」が必要。元画像の白い角を絵柄の背景色で埋めてから、
+      # AppIcon の 1024 pt 画像として差し替える（Xcode 14 以降は 1 枚の 1024 画像で全サイズを賄える）。
+      - name: iOSアプリアイコンを設定
+        run: |
+          set -euo pipefail
+          pip3 install --quiet pillow numpy scipy
+          SET="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          if [ ! -d "$SET" ]; then
+            echo "::error::AppIcon.appiconset が見つかりません: $SET"; exit 1
+          fi
+          python3 tools/make_ios_icon.py assets/icon-only.png "$SET/AppIcon-1024.png"
+          cat > "$SET/Contents.json" << 'EOF2'
+          {
+            "images" : [
+              { "filename" : "AppIcon-1024.png", "idiom" : "universal", "platform" : "ios", "size" : "1024x1024" }
+            ],
+            "info" : { "author" : "xcode", "version" : 1 }
+          }
+          EOF2
+          ls -la "$SET"
+
+      - name: カメラ・マイク・写真の権限を Info.plist に追加
+        run: |
+          set -euo pipefail
+          PLIST="ios/App/App/Info.plist"
+          set_key() {
+            /usr/libexec/PlistBuddy -c "Delete :$1" "$PLIST" 2>/dev/null || true
+            /usr/libexec/PlistBuddy -c "Add :$1 string \"$2\"" "$PLIST"
+          }
+          set_key NSCameraUsageDescription '翻訳する文字をカメラで読み取るために使用します'
+          set_key NSMicrophoneUsageDescription '音声翻訳および会話機能で音声を入力するために使用します'
+          set_key NSPhotoLibraryUsageDescription '画像から文字を読み取って翻訳するために使用します'
+          /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$PLIST"
+
+      - name: Webファイルとプラグインを同期
+        run: npx cap sync ios
+
+      # CocoaPods を使う Capacitor プロジェクトは .xcworkspace でビルドする必要がある（.xcodeproj だと依存が解決できない）
+      - name: Xcodeで未署名アプリ(.app)をビルド
+        run: |
+          set -euo pipefail
+          if [ -d ios/App/App.xcworkspace ]; then
+            TARGET="-workspace ios/App/App.xcworkspace"
+          else
+            TARGET="-project ios/App/App.xcodeproj"
+          fi
+          echo "build target: $TARGET"
+          xcodebuild $TARGET -list
+          xcodebuild $TARGET -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build_output \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      # AltStore が端末側で再署名するので、未署名の .app を Payload に入れた .ipa にすれば十分
+      - name: AltStore用の.ipaファイルにパッケージング
+        run: |
+          set -euo pipefail
+          APP=$(find build_output/Build/Products -maxdepth 2 -name 'App.app' -type d | head -n 1)
+          if [ -z "$APP" ]; then echo "::error::App.app が見つかりません"; exit 1; fi
+          rm -rf Payload && mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry iPadTranslation.ipa Payload
+          rm -rf Payload
+          unzip -l iPadTranslation.ipa | head -n 20
+
+      - name: 完成したIPAをアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-altstore-ipa
+          path: iPadTranslation.ipa
+          if-no-files-found: error
