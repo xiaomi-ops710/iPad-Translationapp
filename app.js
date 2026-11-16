@@ -620,11 +620,12 @@
     denied: 'カメラの使用が許可されていません。端末の設定でカメラを許可してから、シャッターボタンで再試行してください',
     none: 'カメラが見つかりません（デモ画面を表示しています）',
     busy: 'カメラを開けませんでした。他のアプリが使用中かもしれません。シャッターボタンで再試行できます',
-    other: 'カメラを利用できないためデモ画面を表示しています。シャッターボタンで再試行できます'
+    other: 'カメラを利用できないためデモ画面を表示しています。シャッターボタンで再試行できます',
+    insecure: 'この環境ではカメラを使えません（安全な接続が必要です）。デモ画面を表示しています'
   };
   function camHTML() {
     return `<div id="cam">
-      <video id="camv" playsinline muted autoplay></video><img id="camimg" alt="" hidden>
+      <video id="camv" playsinline webkit-playsinline muted autoplay></video><img id="camimg" alt="" hidden>
       <div id="camdemo" hidden><div class="demo-bg"><div class="demo-sign"><div class="ov" id="demoOv" hidden></div>${I.bike}${I.bigArrow}</div></div><div class="demo-note">カメラを利用できないためデモ画面を表示しています</div></div>
       <div id="camov"></div>
       <div class="cam-hint" id="camHint">シャッターボタンをタップして一時停止</div>
@@ -642,6 +643,36 @@
     else if (paused || photoMode) scanOnce();
   }
   function clearOv() { const o = $('#camov'); if (o) o.innerHTML = ''; }
+  // iOS（WKWebView）でカメラ映像をアプリ内で再生するための設定。属性と DOM プロパティの両方を立てる
+  //   playsinline / webkit-playsinline … 全画面に切り替えず、そのまま映像を表示させる
+  //   muted / autoplay                  … 自動再生を許可させる（音声は使わないので無音で問題ない）
+  function prepVideo(v) {
+    if (!v) return v;
+    v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+    v.setAttribute('muted', ''); v.setAttribute('autoplay', '');
+    v.playsInline = true; v.muted = true; v.defaultMuted = true; v.autoplay = true;
+    return v;
+  }
+  // 制約を段階的に緩めて getUserMedia を試す。iOS は解像度などの指定が厳しく OverconstrainedError になりやすいため。
+  // 権限拒否・カメラ無しは制約を変えても直らないので、その時点で打ち切る。
+  const CAM_TRIES = [
+    { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+    { video: { facingMode: 'environment' }, audio: false },
+    { video: true, audio: false }
+  ];
+  const CAM_FATAL = ['NotAllowedError', 'SecurityError', 'NotFoundError', 'NotReadableError', 'AbortError'];
+  async function openCamStream() {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+      const e = new Error('nocam'); e.name = 'NotSupportedError'; throw e;
+    }
+    let lastErr = null;
+    for (const c of CAM_TRIES) {
+      try { return await navigator.mediaDevices.getUserMedia(c); }
+      catch (e) { lastErr = e; if (CAM_FATAL.includes(e && e.name)) break; }
+    }
+    throw lastErr || new Error('nocam');
+  }
+
   async function startCam() {
     updateCam();
     const v = $('#camv'); if (!v) return;
@@ -649,18 +680,17 @@
     $('#camfile').onchange = onPhoto;   // 再試行で startCam が再実行されても二重登録しない
     if (photoMode) { $('#camimg').hidden = false; return; }
     try {
-      if (!stream) {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nocam');
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
-      }
+      if (!stream) stream = await openCamStream();
       if (view !== 'camera') { stopCam(); return; }
       demo = false;
-      const vv = $('#camv'); vv.srcObject = stream; await vv.play().catch(() => {});
+      const vv = prepVideo($('#camv')); vv.srcObject = stream; await vv.play().catch(() => {});
       if (paused) vv.pause();
       scheduleScan(600);
     } catch (e) {
       const nm = (e && e.name) || '';
       camErr = (nm === 'NotAllowedError' || nm === 'SecurityError') ? 'denied' : (nm === 'NotFoundError' || nm === 'OverconstrainedError') ? 'none' : (nm === 'NotReadableError' || nm === 'AbortError') ? 'busy' : 'other';
+      // 安全なコンテキストでないとカメラ API 自体が無い（iOS の WebView 設定によって起きる）
+      if (window.isSecureContext === false && (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)) camErr = 'insecure';
       demo = true;
       const d = $('#camdemo');
       if (d) { d.hidden = false; $('#camv').hidden = true; const nt = $('.demo-note', d); if (nt) nt.textContent = CAM_MSG[camErr]; showDemoOv(); }
@@ -2002,13 +2032,23 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
 
   window.addEventListener('resize', () => { const ph = app.classList.contains('phone'); if (ph !== isPhone()) { updateChrome(); if (conv.open) renderConv(); } if (layout() !== lastLay) applyLayout(); else updateThumbs(); });
   if ('speechSynthesis' in window) speechSynthesis.getVoices();
-  const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    if (isNativeApp) {   // APK ではファイルがアプリに同梱されているので Service Worker は不要。残っていれば解除して古いキャッシュを消す
-      navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
-      if (window.caches) caches.keys().then((ks) => ks.filter((k) => k.startsWith('xlate-')).forEach((k) => caches.delete(k))).catch(() => {});
-    } else window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  // Service Worker は任意機能。capacitor:// などの未対応環境や登録の失敗でアプリ全体の JS を止めないよう、すべて保護する
+  function setupServiceWorker() {
+    try {
+      if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;   // capacitor:// / file:// では登録しない
+      const native = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+      if (native) {   // アプリ（APK / iOS）ではファイルが同梱されているので不要。残っていれば解除して古いキャッシュを消す
+        navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+        if (window.caches) caches.keys().then((ks) => ks.filter((k) => k.startsWith('xlate-')).forEach((k) => caches.delete(k))).catch(() => {});
+        return;
+      }
+      window.addEventListener('load', () => {
+        try { navigator.serviceWorker.register('sw.js').catch((err) => console.warn('sw register failed', err)); }
+        catch (err) { console.warn('sw register skipped', err); }
+      });
+    } catch (err) { console.warn('service worker setup skipped', err); }
   }
+  setupServiceWorker();
 
   applyAppearance();
   render();

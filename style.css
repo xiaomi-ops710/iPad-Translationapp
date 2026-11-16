@@ -941,3 +941,7 @@ html.rm *,html.rm *::before,html.rm *::after{animation-duration:.01ms!important;
   transition:none;-webkit-text-stroke:calc(.45px*var(--tt,0)) currentColor}
 #tabs.tbm::before{opacity:0!important}
 #tabs .tab:active{scale:1}
+
+/* iOS アプリらしい操作感：ボタン・タブ・アイコンは長押しメニューやテキスト選択を出さない。
+   読む／コピーする文字（翻訳結果・会話の吹き出し・入力欄）は下の user-select:text のまま選択可能。 */
+button,[role="button"],#tabs,.tabs,.tab,.icon-btn,.play,.clr,.more-btn,.lang-sel,img,svg{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
