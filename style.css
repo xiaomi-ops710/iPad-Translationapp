@@ -1094,3 +1094,44 @@ body:has(#pop),body:has(.sheet){overflow:hidden;overscroll-behavior:none}
 .st-pv.light,.st-pv.dark{background-size:114% auto;background-position:97% 39%}
 .st-pv i{left:15.4%;width:69%}
 
+/* ======================================================================
+   v1.3：アイコン（添付画像からマスクを作成。色は currentColor）
+   ====================================================================== */
+.ico{display:inline-block;flex:none;background:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.ico-camera{--m:url(img/icon-camera.png)}
+.ico-photos{--m:url(img/icon-photos.png)}
+.ico-torch{--m:url(img/icon-torch.png)}
+.cam-ctl button .ico{width:26px;height:26px}
+.phone .cam-ctl button .ico{width:24px;height:24px}
+.cam-ctl .torch.on{background:#fff;color:#111}
+
+/* ======================================================================
+   v1.3：サイドバーの文字とアイコンを大きく（Files の比率より少し大きめ）
+   ====================================================================== */
+.sb-item{min-height:4.9vw;padding:0 1.6vw;gap:1.7vw;font-size:clamp(15px,2.05vw,24px)}
+.sb-item .ico,.sb-item svg{width:clamp(22px,2.35vw,32px);height:clamp(22px,2.35vw,32px);min-width:22px;min-height:22px}
+.sb-sec{font-size:clamp(14px,1.9vw,20px)}
+
+/* ======================================================================
+   v1.3：シート（AI設定など）は縦に動かさない。拡大縮小と透明度だけで出す
+   ====================================================================== */
+#sheet{position:fixed;inset:0}
+.sheet{transition:opacity .3s,transform .42s cubic-bezier(.2,.9,.3,1),filter .3s!important}
+#sheet:not(.in) .sheet{transform:scale(.96)!important}
+
+/* ======================================================================
+   v1.3：スマホ下部のタブバーを、画面幅の約 92% まで広げる（添付 2 の比率）
+   ====================================================================== */
+.phone #topbar{left:0;right:0;justify-content:center}
+.phone .tabs{width:calc(100vw - 8vw);max-width:none;flex:none}
+
+/* ======================================================================
+   v1.3：戻るボタン・3 点ボタンを大きく（添付 3 の比率：約 46pt 相当）
+   ====================================================================== */
+.phone .ph-circ,.phone .more-btn{width:12vw;height:12vw;min-width:46px;min-height:46px;max-width:60px;max-height:60px}
+.phone .ph-circ svg,.phone .more-btn svg{width:5.4vw;height:5.4vw;max-width:26px;max-height:26px}
+.phone .ph-pill{height:12vw;min-height:46px;max-height:60px}
+.more-btn{width:64px;height:64px}
+lg-button.st-lg-back .lg-button__el{width:clamp(52px,5.2vw,62px);height:clamp(52px,5.2vw,62px);min-height:0}
+lg-button.st-lg-back .lg-button__label svg{width:28px;height:28px}
+

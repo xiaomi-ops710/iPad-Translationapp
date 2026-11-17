@@ -298,7 +298,7 @@
     const it = (nav, icon, label, key, extra = '') => `<button class="sb-item" data-nav="${nav}" data-key="${key}" ${extra}>${icon}<span>${label}</span></button>`;
     return `<div class="sb-head"><button class="icon-btn" data-act="layout" aria-label="サイドバーを隠す">${I.window}</button></div>
       <div class="sb-list" id="sblist"><span class="thumb" id="sthumb"></span>
-        ${it('translate', I.translate, '翻訳', 'translate')}${it('camera', I.camera, 'カメラ', 'camera')}${it('conversation', I.people, '会話', 'conversation')}${it('siri', I.siri, 'Siri', 'siri')}
+        ${it('translate', I.translate, '翻訳', 'translate')}${it('camera', '<span class="ico ico-camera" aria-hidden="true"></span>', 'カメラ', 'camera')}${it('conversation', I.people, '会話', 'conversation')}${it('siri', I.siri, 'Siri', 'siri')}
         <button class="sb-sec" data-act="favtoggle"><span>お気に入り</span><i class="${S.favOpen ? '' : 'shut'}">${I.chev}</i></button>
         ${S.favOpen ? it('fav', I.starO, 'すべてのお気に入り', 'fav:') + pairs.map((p) => { const [a, b] = p.split('>'); return it('fav', I.starO, esc(pairLabel(a, b)), 'fav:' + p, `data-pair="${p}"`); }).join('') : ''}
       </div>`;
@@ -526,20 +526,23 @@
   function popLiquid(p, anchor, x, y, pw, ph) {
     p.classList.toggle('has-ic', !!p.querySelector('.pi'));
     if (reduceMotion() || !p.animate) return;
-    // 本家と同じ：ボタンの位置・大きさから、角丸のメニューへ広がって開く（にじみを伴う）
     const r = anchor.getBoundingClientRect();
-    const sx = Math.max(0.08, r.width / pw), sy = Math.max(0.08, r.height / ph);
-    const dx = r.left - x, dy = r.top - y;
-    p._box = { dx, dy, sx, sy };
-    p.style.animation = 'none'; p.style.transformOrigin = '0px 0px';
-    p.animate([
-      { opacity: 0.2, transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})`, filter: 'blur(9px)', offset: 0 },
-      { opacity: 1, transform: `translate(${dx * 0.35}px,${dy * 0.35}px) scale(${sx + (1 - sx) * 0.7},${sy + (1 - sy) * 0.7})`, filter: 'blur(2px)', offset: 0.45 },
-      { opacity: 1, transform: 'translate(0px,0px) scale(1.012,1.012)', filter: 'blur(0px)', offset: 0.82 },
-      { opacity: 1, transform: 'translate(0px,0px) scale(1,1)', filter: 'blur(0px)' }
-    ], { duration: 430, easing: 'cubic-bezier(.22,.9,.3,1)', fill: 'both' });
+    // ボタンの矩形から、角丸のメニューへ。辺ごとに時間差で動く（上辺は遅れ、左・下辺は先に伸びる＝ぐにゃっとした変形）
+    const bt = Math.max(0, r.top - y), bl = Math.max(0, r.left - x), bb = Math.max(0, ph - (r.bottom - y)), br = Math.max(0, pw - (r.right - x));
+    const r0 = Math.min(r.width, r.height) / 2;
+    const clip = (qT, qR, qB, qL, qK) => `inset(${bt * (1 - qT)}px ${br * (1 - qR)}px ${bb * (1 - qB)}px ${bl * (1 - qL)}px round ${r0 + (30 - r0) * qK}px)`;
+    p._clip = { bt, bl, bb, br, r0 };
+    p.style.animation = 'none'; p.style.transformOrigin = '50% 0%';
+    const a = p.animate([
+      { clipPath: clip(0, 0, 0, 0, 0), opacity: 0.35, filter: 'blur(7px)', transform: 'scale(.94,.9)' },
+      { clipPath: clip(0.12, 0.5, 0.62, 0.78, 0.3), opacity: 1, filter: 'blur(2px)', transform: 'scale(1,1)', offset: 0.3 },
+      { clipPath: clip(0.6, 0.92, 0.97, 0.99, 0.7), opacity: 1, filter: 'blur(0px)', transform: 'scale(1.02,1.035)', offset: 0.62 },
+      { clipPath: clip(1, 1, 1, 1, 1), opacity: 1, filter: 'blur(0px)', transform: 'scale(.995,.99)', offset: 0.84 },
+      { clipPath: clip(1, 1, 1, 1, 1), opacity: 1, filter: 'blur(0px)', transform: 'scale(1,1)' }
+    ], { duration: 520, easing: 'cubic-bezier(.22,.9,.3,1)', fill: 'both' });
+    a.onfinish = () => { p.style.clipPath = ''; };
     $$('.pop-item,.pop-h,.pop-sep', p).forEach((el, i) => {
-      el.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 240, delay: 150 + i * 22, easing: 'ease-out', fill: 'both' });
+      el.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 240, delay: 170 + i * 22, easing: 'ease-out', fill: 'both' });
     });
   }
   /* 項目を長押し／ホバーすると、薄い楕円が現れて指に追従して滑る */
@@ -573,15 +576,17 @@
     const p = $('#pop'); popCb = null; if (!p) return;
     p.removeAttribute('id'); p.style.pointerEvents = 'none';
     if (reduceMotion() || !p.animate) { p.remove(); return; }
-    const bx = p._box || { dx: 0, dy: 0, sx: 0.2, sy: 0.2 };
-    p.style.animation = 'none'; p.style.transformOrigin = '0px 0px';
+    const c = p._clip || { bt: 0, bl: 0, bb: 0, br: 0, r0: 20 };
+    const clip = (qT, qR, qB, qL, qK) => `inset(${c.bt * (1 - qT)}px ${c.br * (1 - qR)}px ${c.bb * (1 - qB)}px ${c.bl * (1 - qL)}px round ${c.r0 + (30 - c.r0) * qK}px)`;
+    p.style.animation = 'none'; p.style.transformOrigin = '50% 0%';
+    // 閉じるときは、下・左が先にボタンへ戻り、上辺が最後に縮む（開くときより速い）
     const a = p.animate([
-      { opacity: 1, transform: 'translate(0px,0px) scale(1,1)', filter: 'blur(0px)', offset: 0 },
-      { opacity: 1, transform: `translate(${bx.dx * 0.4}px,${bx.dy * 0.4}px) scale(${bx.sx + (1 - bx.sx) * 0.4},${bx.sy + (1 - bx.sy) * 0.4})`, filter: 'blur(3px)', offset: 0.5 },
-      { opacity: 0, transform: `translate(${bx.dx}px,${bx.dy}px) scale(${bx.sx},${bx.sy})`, filter: 'blur(8px)', offset: 1 }
-    ], { duration: 280, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' });
-    $$('.pop-item,.pop-h,.pop-sep', p).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 100, fill: 'forwards' }));
-    a.onfinish = () => p.remove(); setTimeout(() => p.remove(), 420);
+      { clipPath: clip(1, 1, 1, 1, 1), opacity: 1, filter: 'blur(0px)', transform: 'scale(1,1)' },
+      { clipPath: clip(0.6, 0.85, 0.5, 0.35, 0.6), opacity: 0.9, filter: 'blur(2px)', transform: 'scale(.98,.97)', offset: 0.45 },
+      { clipPath: clip(0, 0, 0, 0, 0), opacity: 0, filter: 'blur(7px)', transform: 'scale(.94,.9)' }
+    ], { duration: 340, easing: 'cubic-bezier(.5,0,.75,.2)', fill: 'forwards' });
+    $$('.pop-item,.pop-h,.pop-sep', p).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, fill: 'forwards' }));
+    a.onfinish = () => p.remove(); setTimeout(() => p.remove(), 480);
   }
   function showPop(anchor, html, o = {}) {
     closePop();
@@ -645,7 +650,7 @@
       <div id="camdemo" hidden><div class="demo-bg"><div class="demo-sign"><div class="ov" id="demoOv" hidden></div>${I.bike}${I.bigArrow}</div></div><div class="demo-note">カメラを利用できないためデモ画面を表示しています</div></div>
       <div id="camov"></div>
       <div class="cam-hint" id="camHint">シャッターボタンをタップして一時停止</div>
-      <div class="cam-ctl"><button data-act="camPhotos" aria-label="写真を選択">${I.photos}</button><button class="shutter" id="shutter" data-act="shutter" aria-label="一時停止"><i></i></button><button class="torch" id="torch" data-act="torch" aria-label="ライト">${I.torch}</button></div>
+      <div class="cam-ctl"><button data-act="camPhotos" aria-label="写真を選択"><span class="ico ico-photos" aria-hidden="true"></span></button><button class="shutter" id="shutter" data-act="shutter" aria-label="一時停止"><i></i></button><button class="torch" id="torch" data-act="torch" aria-label="ライト"><span class="ico ico-torch" aria-hidden="true"></span></button></div>
       <div class="cam-langs"><button class="lang-sel" data-lang="src" id="cLs"></button><span class="arr">${I.arrow}</span><button class="lang-sel" data-lang="tgt" id="cLt"></button></div>
       <input type="file" id="camfile" accept="image/*" hidden>
     </div>`;
@@ -1539,7 +1544,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       return { t: '設定', h: `<div class="st-appicon">${I.gearApp}</div><div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
         <div class="st-grp"><button class="st-row nav" data-act="st:ai"><span>AI翻訳（Gemini）</span><em>${hasAI() ? esc(AI().model) : '未設定'}</em>${chevR}</button></div>
         <p class="st-cap">Siri・カメラ翻訳・翻訳の高速化に Gemini を使います。</p>
-        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.2</em></div></div>` };
+        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.3</em></div></div>` };
     }
     if (p === 'appearance') {
       const eff = effTheme();
