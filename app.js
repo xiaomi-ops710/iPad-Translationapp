@@ -10,6 +10,14 @@
 
   /* ------------------------------------------------------------------ icons */
   const I = window.XI; // icons.js（SF Symbols 風）
+  // iOS 26 の Liquid Glass コンポーネント（components.js）が読み込めているか。読めない場合は従来の見た目のまま動く
+  const LGON = () => !!(window.customElements && customElements.get('lg-switch') && customElements.get('lg-slider') && customElements.get('lg-button') && customElements.get('lg-panel'));
+  // 丸いボタン：Liquid Glass 版（lg-button）。data-act の処理はそのまま使える
+  const lgCircle = (cls, act, label, icon) => (LGON()
+    ? `<lg-button class="${cls}" radius="capsule" data-act="${act}" aria-label="${label}">${icon}</lg-button>`
+    : `<button class="${cls}" data-act="${act}" aria-label="${label}">${icon}</button>`);
+  // 部品の読み込みが済んだら、Liquid Glass 版で描き直す
+  window.addEventListener('lgready', () => { try { render(); } catch (e) { console.warn('lgready render', e); } });
 
   /* -------------------------------------------------------------- languages */
   // [code, 名称, 短い名称, MyMemory, 音声BCP47, tesseract, 入力プレースホルダ, 会話のプレースホルダ]
@@ -283,7 +291,7 @@
   const TABS = [['translate', '翻訳'], ['camera', 'カメラ'], ['conversation', '会話'], ['siri', 'Siri'], ['fav', 'お気に入り']];
   function buildShell() {
     app.innerHTML = `<aside id="sidebar"><div class="sb-in" id="sbin"></div></aside>
-      <main id="main"><div id="phbar" class="phbar"></div><header id="topbar"><div class="tabs" id="tabs"><span class="thumb" id="tthumb"></span><div class="tlens" id="tlens"></div><button class="tab tab-ic" data-act="layout" aria-label="サイドバーを表示">${I.sidebar}</button>${TABS.map(([n, l]) => `<button class="tab" data-nav="${n}"><i class="tic">${TABIC[n] || ''}</i><span>${l}</span></button>`).join('')}</div><button class="more-btn" data-act="more" aria-label="その他">${I.more}</button></header><div id="content"></div></main>`;
+      <main id="main"><div id="phbar" class="phbar"></div><header id="topbar">${LGON() ? '<lg-panel class="tabs" id="tabs" radius="capsule">' : '<div class="tabs" id="tabs">'}<span class="thumb" id="tthumb"></span><div class="tlens" id="tlens"></div><button class="tab tab-ic" data-act="layout" aria-label="サイドバーを表示">${I.sidebar}</button>${TABS.map(([n, l]) => `<button class="tab" data-nav="${n}"><i class="tic">${TABIC[n] || ''}</i><span>${l}</span></button>`).join('')}${LGON() ? '</lg-panel>' : '</div>'}${lgCircle('more-btn', 'more', 'その他', I.more)}</header><div id="content"></div></main>`;
     sbSig = '';
   }
   function sidebarInner(pairs) {
@@ -327,7 +335,7 @@
   function updatePhbar() {
     const b = $('#phbar'); if (!b) return;
     if (!isPhone()) { b.innerHTML = ''; return; }
-    const more = `<button class="ph-circ" data-act="more" aria-label="その他">${I.more}</button>`;
+    const more = lgCircle('ph-circ', 'more', 'その他', I.more);
     let h = '';
     if (conv.open) h = `<button class="ph-pill" data-act="cview" aria-label="表示">表示</button><b class="ph-t">会話</b>${more}`;
     else if (view === 'translate') h = `<button class="ph-circ" data-nav="fav" aria-label="お気に入り">${I.favlist}</button><span></span>${more}`;
@@ -570,7 +578,7 @@
   function showPop(anchor, html, o = {}) {
     closePop();
     const p = document.createElement('div');
-    p.id = 'pop'; p.className = 'pop'; p.innerHTML = html;
+    p.id = 'pop'; p.className = LGON() ? 'pop pop-lgw' : 'pop'; p.innerHTML = LGON() ? `<lg-panel class="pop-lg" radius="30">${html}</lg-panel>` : html;
     document.body.appendChild(p);
     const r = anchor.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
     let x = o.align === 'right' ? r.right - pw : o.align === 'center' ? r.left + r.width / 2 - pw / 2 : r.left;
@@ -1359,11 +1367,11 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     return `<div class="sr pane-${SR.pane}${vocab ? ' is-vocab' : ''}">
       <aside class="sr-side"><div class="sr-bar"><button class="sr-circ" data-act="s:filter" aria-label="フィルタ">${I.filter}</button><button class="sr-circ" data-act="s:new" aria-label="新規チャット">${I.compose}</button></div>
         <div class="sr-title">Siri</div><div class="sr-cards">${cards}</div></aside>
-      <section class="sr-main"><div class="sr-top"><button class="sr-circ" data-act="s:back" aria-label="戻る">${I.back}</button><b>${esc(phoneTitle)}</b><button class="sr-circ" data-act="more" aria-label="その他">${I.more}</button></div>
+      <section class="sr-main"><div class="sr-top">${lgCircle('sr-circ', 's:back', '戻る', I.back)}<b>${esc(phoneTitle)}</b>${lgCircle('sr-circ', 'more', 'その他', I.more)}</div>
         <div class="sr-scroll" id="chat"><div class="sr-col">${main}</div></div>
-        ${vocab ? '' : `<div class="sr-comp${SR.draft ? ' has' : ''}"><button class="sr-circ" data-act="s:plus" aria-label="追加">${I.plus}</button>
-          <div class="sr-input"><textarea id="askin" data-sk="ask" rows="1" enterkeyhint="send" placeholder="Siri に質問" autocomplete="off" autocorrect="off" spellcheck="false">${esc(SR.draft)}</textarea></div>
-          <button class="sr-circ mic${SR.rec ? ' rec' : ''}" data-act="s:mic" aria-label="音声入力">${I.mic}</button><button class="sr-circ send" data-act="s:send" aria-label="送信">${I.arrowUp}</button></div>`}</section></div>`;
+        ${vocab ? '' : `<div class="sr-comp${SR.draft ? ' has' : ''}">${lgCircle('sr-circ', 's:plus', '追加', I.plus)}
+          ${LGON() ? '<lg-panel class="sr-input" radius="26">' : '<div class="sr-input">'}<textarea id="askin" data-sk="ask" rows="1" enterkeyhint="send" placeholder="Siri に質問" autocomplete="off" autocorrect="off" spellcheck="false">${esc(SR.draft)}</textarea>${LGON() ? '</lg-panel>' : '</div>'}
+          ${lgCircle('sr-circ mic' + (SR.rec ? ' rec' : ''), 's:mic', '音声入力', I.mic)}${lgCircle('sr-circ send', 's:send', '送信', I.arrowUp)}</div>`}</section></div>`;
   }
   function siriRender(keepScroll, toBottom) {
     if (view !== 'siri') return;
@@ -1497,7 +1505,6 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   const chevR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5.5l6.5 6.5L9 18.5"/></svg>';
   // iOS 26 の Liquid Glass コンポーネント（liquidglass.dev / components.js）が読み込めているか。
   // 読み込めない（オフライン等）場合は従来の描画を使うので、設定画面が使えなくなることはない。
-  const LGON = () => !!(window.customElements && customElements.get('lg-switch') && customElements.get('lg-slider') && customElements.get('lg-button'));
   const SW_LABEL = { auto: '自動', bold: '文字を太くする', rm: '視差効果を減らす' };
   const swHTML = (k, on) => (LGON()
     ? `<lg-switch class="st-lg" data-k="${k}"${on ? ' checked' : ''} aria-label="${SW_LABEL[k] || k}"></lg-switch>`
