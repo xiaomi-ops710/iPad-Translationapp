@@ -1042,3 +1042,30 @@ lg-panel.sr-input>.lg-panel__body{display:flex;align-items:center;width:100%;min
 .pop.pop-lgw{background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;border:0;overflow:visible}
 lg-panel.pop-lg{display:block;color:var(--ink);--lg-text:var(--ink);padding:10px;box-sizing:border-box;max-height:72vh;overflow-y:auto}
 
+/* ======================================================================
+   設定画面を本家（iPad の設定）の寸法に合わせる：画面幅に対する比率（vw）で指定
+   ====================================================================== */
+.st-body{max-width:1100px;margin:0 auto;padding:0 8.2vw}
+.st-grp{border-radius:34px}
+.st-row{min-height:clamp(50px,5.4vw,64px);padding:0 2.2vw}
+.st-cap{margin:.9vw 2.2vw 2.4vw}
+.st-h{margin:2.6vw 2.2vw 1vw}
+/* 外観モードの壁紙：幅 約 11.6%、中心を画面中央から ±15.1% に置く */
+.st-modes{display:flex;justify-content:center;gap:18.6vw;padding:2.7vw 0 2vw}
+.st-mode{width:clamp(96px,11.6vw,240px)}
+.st-pv{max-width:none;aspect-ratio:208/300}
+.st-pv span{top:9%;font-size:calc(16cqw*var(--ts,1))}
+.st-pv i{top:27.5%;height:10%}
+.st-pv i+i{top:41.5%;height:9.4%}
+/* トグル：本家の大きさ（約 72×32pt）に合わせて拡大 */
+lg-switch.st-lg{zoom:1.13}
+
+/* 戻るボタン：本家の丸い玻璃（濃いグレーの半透明・白い縁取り・シェブロン） */
+lg-button.st-lg-back{--lg-tint:rgb(120 120 128 / .36);--lg-on-glass:var(--ink)}
+lg-button.st-lg-back .lg-button__el{width:46px;height:46px;min-height:46px;padding:0;border-radius:50%;color:var(--ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),inset 0 1.5px 0 rgba(255,255,255,.26),0 2px 10px rgba(0,0,0,.35)}
+lg-button.st-lg-back .lg-button__label svg{width:24px;height:24px}
+
+/* AI キーのシート（lg-panel）：文字色と余白を従来どおりにする */
+lg-panel.sheet-lg{color:var(--ink);background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+lg-panel.sheet-lg>.lg-panel__body{padding:6px 0 calc(env(safe-area-inset-bottom,0px) + 16px)}
+

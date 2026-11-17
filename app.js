@@ -1017,13 +1017,13 @@
     const a = AI();
     const d = document.createElement('div');
     d.id = 'sheet';
-    d.innerHTML = `<div class="sheet-bg" data-act="sheetClose"></div><div class="sheet" role="dialog" aria-label="AI翻訳の設定">
+    d.innerHTML = `<div class="sheet-bg" data-act="sheetClose"></div>${LGON() ? '<lg-panel class="sheet sheet-lg" radius="34" role="dialog" aria-label="AI翻訳の設定">' : '<div class="sheet" role="dialog" aria-label="AI翻訳の設定">'}
       <div class="sheet-h"><button class="sheet-b" data-act="sheetClose">キャンセル</button><b>AI翻訳</b><button class="sheet-b strong" data-act="aiSave">完了</button></div>
       <p class="sheet-p">Gemini API を使うと、結果を順次表示するストリーミングで高速に翻訳できます。キーが空のときは標準翻訳（MyMemory）を使います。</p>
       <div class="grp"><label class="rowf"><span>APIキー</span><input id="aiKey" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="AIza…" value="${esc(a.key)}"></label>
       <label class="rowf"><span>モデル</span><input id="aiModel" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" list="aiModels" placeholder="gemini-3.6-flash" value="${esc(a.model)}"></label><datalist id="aiModels"><option value="gemini-3.6-flash"><option value="gemini-3.8-flash"><option value="gemini-3.5-flash-lite"><option value="gemini-3.1-flash-lite"><option value="gemini-flash-latest"></datalist></div>
       <div class="grp"><button class="rowb" data-act="aiTest">接続テスト</button><div class="rowb res" id="aiRes"></div></div>
-      <p class="sheet-p small">キーはこの端末の localStorage にだけ保存され、Google の API へ直接送信されます。公開サイトで使う場合は、<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> でキーの利用元を公開URL（HTTPリファラー）に制限してください。</p></div>`;
+      <p class="sheet-p small">キーはこの端末の localStorage にだけ保存され、Google の API へ直接送信されます。公開サイトで使う場合は、<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> でキーの利用元を公開URL（HTTPリファラー）に制限してください。</p>${LGON() ? '</lg-panel>' : '</div>'}`;
     document.body.appendChild(d);
     requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('in')));
   }
@@ -1531,7 +1531,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       return { t: '設定', h: `<div class="st-appicon">${I.gearApp}</div><div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
         <div class="st-grp"><button class="st-row nav" data-act="st:ai"><span>AI翻訳（Gemini）</span><em>${hasAI() ? esc(AI().model) : '未設定'}</em>${chevR}</button></div>
         <p class="st-cap">Siri・カメラ翻訳・翻訳の高速化に Gemini を使います。</p>
-        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.0</em></div></div>` };
+        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.1</em></div></div>` };
     }
     if (p === 'appearance') {
       const eff = effTheme();
@@ -1599,9 +1599,11 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
         if (sl) lgSliderApply(sl);
       });
     }
-    const backLabel = root ? '閉じる' : '戻る', backIc = root ? I.x : I.back;
+    const backLabel = root ? '閉じる' : '戻る';
+    const chevLG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4.5 7.5 12l7.5 7.5"/></svg>';
+    const backIc = root ? I.x : (LGON() ? chevLG : I.back);
     const backBtn = LGON()
-      ? `<lg-button class="st-lg-back" radius="22" data-act="st:back" aria-label="${backLabel}">${backIc}</lg-button>`
+      ? `<lg-button class="st-lg-back" radius="22" refraction="18" bezel="0.9" curvature="3" specular="0.9" specular-width="2" chroma="0.08" data-act="st:back" aria-label="${backLabel}">${backIc}</lg-button>`
       : `<button class="st-circ" data-act="st:back" aria-label="${backLabel}">${backIc}</button>`;
     d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}"><div class="st-bar">${backBtn}<b>${pg.t}</b><span class="st-circ ghost"></span></div><div class="st-scroll"><div class="st-body">${pg.h}</div></div></div>`;
   }
