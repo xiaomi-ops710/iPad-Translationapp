@@ -1486,8 +1486,24 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   const tsLabel = (v) => (v < 0.95 ? '小' : v < 1.05 ? '標準' : v < 1.25 ? '大' : '特大');
   const SET = { stack: ['root'] };
   const chevR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5.5l6.5 6.5L9 18.5"/></svg>';
-  const swHTML = (k, on) => `<button class="st-sw${on ? ' on' : ''}" role="switch" aria-checked="${on}" data-act="st:tg" data-k="${k}"><i></i></button>`;
+  // iOS 26 の Liquid Glass コンポーネント（liquidglass.dev / components.js）が読み込めているか。
+  // 読み込めない（オフライン等）場合は従来の描画を使うので、設定画面が使えなくなることはない。
+  const LGON = () => !!(window.customElements && customElements.get('lg-switch') && customElements.get('lg-slider') && customElements.get('lg-button'));
+  const SW_LABEL = { auto: '自動', bold: '文字を太くする', rm: '視差効果を減らす' };
+  const swHTML = (k, on) => (LGON()
+    ? `<lg-switch class="st-lg" data-k="${k}"${on ? ' checked' : ''} aria-label="${SW_LABEL[k] || k}"></lg-switch>`
+    : `<button class="st-sw${on ? ' on' : ''}" role="switch" aria-checked="${on}" data-act="st:tg" data-k="${k}"><i></i></button>`);
   function sliderHTML(key, v, min, max, ticks, icL, icR) {
+    if (LGON()) {
+      // 「Liquid Glass」は 0 / 0.5 / 1 の 3 段、「テキストサイズ」は TS_STEPS の段に合わせる
+      const isTs = key === 'ts';
+      const nearIdx = (x, arr) => arr.reduce((b, _, i) => (Math.abs(arr[i] - x) < Math.abs(arr[b] - x) ? i : b), 0);
+      const pos = isTs ? nearIdx(v, TS_STEPS) : Math.round(v * 2) / 2;
+      const lo = isTs ? 0 : min, hi = isTs ? TS_STEPS.length - 1 : max, step = isTs ? 1 : 0.5;
+      const stops = isTs ? TS_STEPS.map((_, i) => i) : [0, 0.5, 1];
+      const dots = stops.map((x) => `<span class="st-lgtick" style="left:calc(18px + (100% - 36px) * ${(x - lo) / (hi - lo)})"></span>`).join('');
+      return `<div class="st-slider-lg" data-sl="${key}"><span class="ic">${icL}</span><div class="st-lgwrap"><lg-slider class="st-lg" data-sl="${key}" min="${lo}" max="${hi}" step="${step}" value="${pos}" label="${isTs ? 'テキストサイズ' : 'Liquid Glass'}"></lg-slider>${dots}</div><span class="ic">${icR}</span></div>`;
+    }
     const p = ((v - min) / (max - min)) * 100;
     return `<div class="st-slider" data-sl="${key}" data-min="${min}" data-max="${max}"><span class="ic">${icL}</span><div class="trk"><i class="fill" style="width:${p}%"></i>${ticks.map((t) => `<span class="tick" style="left:${((t - min) / (max - min)) * 100}%"></span>`).join('')}<b class="knob" style="left:${p}%"></b></div><span class="ic">${icR}</span></div>`;
   }
@@ -1515,7 +1531,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     }
     if (p === 'glass') {
       return { t: 'Liquid Glass', h: `<div class="st-scene"><div class="sky"></div><div class="hill"></div><div class="ring"></div><div class="ring r2"></div>
-        <div class="st-demo"><span class="dc">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M7.5 12h9M10 16h4"/></svg>'}</span><span class="dp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>検索</span></div>
+        <div class="st-demo">${LGON() ? `<lg-button class="st-lg-dc" radius="32" aria-label="フィルタ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M7.5 12h9M10 16h4"/></svg></lg-button><lg-button class="st-lg-dp" aria-label="検索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>検索</lg-button>` : `<span class="dc">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M7.5 12h9M10 16h4"/></svg>'}</span><span class="dp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>検索</span>`}</div>
         <div class="st-scene-t"><b>Liquid Glass のプレビュー</b><span>タブバーやボタンの透け方</span></div></div>
         <div class="st-grp slider-card">${sliderHTML('gl', a.gl, 0, 1, [0, 0.5, 1], IC_CLEAR, IC_TINT)}</div>
         <p class="st-cap">“クリア”を選択すると透明度が高くなり、“色合い調整”を選択すると不透明度が上がってコンテンツやコントロールのコントラストが強くなります。</p>` };
@@ -1526,11 +1542,45 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     }
     return { t: '', h: '' };
   }
+  // スイッチの状態を外観設定へ反映（Liquid Glass 版と従来版で共通）
+  function setToggle(k, want) {
+    const a = AP();
+    if (k === 'auto') {
+      if ((a.mode === 'auto') === want) return;
+      a.mode = want ? 'auto' : effTheme(); save(); applyAppearance(); renderSettings(); return;
+    }
+    if (!!a[k] === want) return;
+    a[k] = want; save(); applyAppearance();
+  }
+  // lg-slider の値を外観設定へ反映（テキストサイズは段のインデックス → TS_STEPS の値）
+  function lgSliderApply(sl) {
+    const key = sl.dataset.sl, a = AP(), v = Number(sl.value);
+    if (!Number.isFinite(v)) return;
+    a[key] = key === 'ts' ? TS_STEPS[Math.max(0, Math.min(TS_STEPS.length - 1, Math.round(v)))] : v;
+    applyAppearance();
+  }
   function renderSettings(dir) {
     let d = $('#settings');
     const p = SET.stack[SET.stack.length - 1], pg = settingsPage(p), root = SET.stack.length === 1;
-    if (!d) { d = document.createElement('div'); d.id = 'settings'; document.body.appendChild(d); requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('in'))); }
-    d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}"><div class="st-bar"><button class="st-circ" data-act="st:back" aria-label="${root ? '閉じる' : '戻る'}">${root ? I.x : I.back}</button><b>${pg.t}</b><span class="st-circ ghost"></span></div><div class="st-scroll"><div class="st-body">${pg.h}</div></div></div>`;
+    if (!d) {
+      d = document.createElement('div'); d.id = 'settings'; document.body.appendChild(d); requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('in')));
+      // Liquid Glass コンポーネント（lg-switch / lg-slider）からのイベント。内側のネイティブ要素の change / input がバブルして届く
+      d.addEventListener('change', (e) => {
+        const sw = e.target.closest && e.target.closest('lg-switch');
+        if (sw) { setToggle(sw.dataset.k, sw.checked); return; }
+        const sl = e.target.closest && e.target.closest('lg-slider');
+        if (sl) { lgSliderApply(sl); save(); }
+      });
+      d.addEventListener('input', (e) => {
+        const sl = e.target.closest && e.target.closest('lg-slider');
+        if (sl) lgSliderApply(sl);
+      });
+    }
+    const backLabel = root ? '閉じる' : '戻る', backIc = root ? I.x : I.back;
+    const backBtn = LGON()
+      ? `<lg-button class="st-lg-back" radius="22" data-act="st:back" aria-label="${backLabel}">${backIc}</lg-button>`
+      : `<button class="st-circ" data-act="st:back" aria-label="${backLabel}">${backIc}</button>`;
+    d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}"><div class="st-bar">${backBtn}<b>${pg.t}</b><span class="st-circ ghost"></span></div><div class="st-scroll"><div class="st-body">${pg.h}</div></div></div>`;
   }
   function openSettings() { SET.stack = ['root']; closePop(); renderSettings(); }
   function closeSettings() { const d = $('#settings'); if (!d) return; d.classList.remove('in'); setTimeout(() => d.remove(), 320); }

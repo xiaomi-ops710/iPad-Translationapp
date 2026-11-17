@@ -945,3 +945,38 @@ html.rm *,html.rm *::before,html.rm *::after{animation-duration:.01ms!important;
 /* iOS アプリらしい操作感：ボタン・タブ・アイコンは長押しメニューやテキスト選択を出さない。
    読む／コピーする文字（翻訳結果・会話の吹き出し・入力欄）は下の user-select:text のまま選択可能。 */
 button,[role="button"],#tabs,.tabs,.tab,.icon-btn,.play,.clr,.more-btn,.lang-sel,img,svg{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* ======================================================================
+   iOS 26 設定画面：Liquid Glass コンポーネント（liquidglass.dev / components.js）と本家に近い見た目
+   読み込めなかった場合は上の従来スタイル（.st-sw / .st-slider / .st-circ）がそのまま使われる
+   ====================================================================== */
+/* グループの角丸と行の区切り線：左右に余白を空けた細い線（本家の設定と同じ位置関係） */
+.st-grp{border-radius:26px}
+.st-row{min-height:54px}
+.st-row+.st-row{border-top:0}
+.st-row+.st-row::before{content:"";position:absolute;left:22px;right:22px;top:0;height:.5px;background:var(--line);pointer-events:none}
+
+/* lg-switch / lg-slider：カードの背景色の上に乗せる（--lg-surface）、色は iOS の値に合わせる */
+.st-lg{--lg-surface:var(--card);--lg-on:#34c759;--lg-accent:#0a84ff;--lg-track:rgba(120,120,128,.36);--lg-track-off:rgba(120,120,128,.36);--lg-text:var(--ink);--lg-on-glass:var(--ink)}
+.st-row>lg-switch.st-lg{flex:none}
+
+/* テキストサイズ・Liquid Glass のスライダー行 */
+.st-slider-lg{position:relative;display:flex;align-items:center;gap:14px;height:56px;color:var(--sub)}
+.st-slider-lg .ic{width:30px;display:grid;place-items:center;flex:none}
+.st-slider-lg .ic svg{width:28px;height:24px}
+.st-lgwrap{position:relative;flex:1;min-width:0;height:36px}
+.st-lgwrap lg-slider.st-lg{display:block;width:100%}
+.st-lgtick{position:absolute;top:31px;width:4px;height:4px;border-radius:50%;background:var(--sub);opacity:.6;transform:translateX(-50%);pointer-events:none}
+
+/* 戻るボタン：丸い玻璃ボタン */
+lg-button.st-lg-back{width:46px;height:46px}
+lg-button.st-lg-back .lg-button__el{width:46px;height:46px;min-height:46px;padding:0;color:var(--ink)}
+lg-button.st-lg-back .lg-button__label svg{width:22px;height:22px}
+
+/* Liquid Glass のプレビュー上のボタン */
+.st-demo lg-button.st-lg-dc .lg-button__el{width:64px;height:64px;min-height:0;padding:0;color:var(--ink)}
+.st-demo lg-button.st-lg-dc .lg-button__label svg{width:30px;height:30px}
+.st-demo lg-button.st-lg-dp .lg-button__el{height:64px;min-height:0;padding:0 22px;font-size:calc(18px*var(--ts,1));font-weight:500;color:var(--sub)}
+.st-demo lg-button.st-lg-dp .lg-button__label{gap:12px}
+.st-demo lg-button.st-lg-dp .lg-button__label svg{width:24px;height:24px;color:var(--ink)}
+

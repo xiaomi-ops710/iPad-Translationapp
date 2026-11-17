@@ -23,6 +23,10 @@
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="icons.js"></script>
+<script type="module">
+  // Liquid Glass コンポーネント（iOS 26 風）。読み込めなくてもアプリは従来の設定画面で動く
+  import('https://liquidglass.dev/lib/components.js').catch(() => {});
+</script>
 <script src="app.js"></script>
 </body>
 </html>
