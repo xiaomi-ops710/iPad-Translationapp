@@ -1468,8 +1468,17 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
    * ==================================================================== */
   const APP_DEF = { mode: 'auto', gl: 0.44, ts: 1, bold: false, rm: false };
   const AP = () => (S.appear = Object.assign({}, APP_DEF, S.appear || {}));
+  // 「クリア ↔ 色合い調整」に合わせて、玻璃の色合いと磨りガラスのぼかしを変える（本家の一番右＝最もすりガラス）
+  function syncGlassLook(g) {
+    const c = Math.round(255 - 210 * g);
+    document.documentElement.style.setProperty('--lg-tint', `rgb(${c} ${c} ${c} / ${(0.12 + 0.36 * g).toFixed(2)})`);
+    document.querySelectorAll('.st-hero lg-button').forEach((b) => {
+      try { if (b.surface && b.surface.glass) b.surface.glass.update({ blur: 0.5 + 6 * g }); } catch (e) { /* 更新できなくても見た目の色合いは反映される */ }
+    });
+  }
   function applyAppearance() {
     const a = AP(), r = document.documentElement;
+    syncGlassLook(a.gl);
     if (a.mode === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', a.mode);
     r.style.colorScheme = a.mode === 'auto' ? 'light dark' : a.mode;
     r.style.setProperty('--gk', (0.4 + a.gl * 1.4).toFixed(3));
@@ -1519,7 +1528,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     }
     if (p === 'appearance') {
       const eff = effTheme();
-      const pv = (k, label) => `<button class="st-mode" data-act="st:mode" data-v="${k}"><div class="pv ${k}"><span>9:41</span><i></i><i></i></div><b>${label}</b><span class="rd${eff === k ? ' on' : ''}">${eff === k ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4 8-9"/></svg>' : ''}</span></button>`;
+      const pv = (k, label) => `<button class="st-mode" data-act="st:mode" data-v="${k}"><div class="pv st-pv ${k}"><span>9:41</span><i></i><i></i></div><b>${label}</b><span class="rd${eff === k ? ' on' : ''}">${eff === k ? '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4 8-9"/></svg>' : ''}</span></button>`;
       return { t: '外観モード', h: `<div class="st-grp"><div class="st-modes">${pv('light', 'ライト')}${pv('dark', 'ダーク')}</div><div class="st-row"><span>自動</span>${swHTML('auto', a.mode === 'auto')}</div></div>
         <p class="st-cap">“自動”では、システムの設定に従ってライトとダークが切り替わります。</p>
         <div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="glass"><span>Liquid Glass</span><em>${glLabel(a.gl)}</em>${chevR}</button></div>
@@ -1530,9 +1539,16 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
         <p class="st-cap">オンにすると、レンズの伸縮やメニューの動きなどのアニメーションを抑えます。</p>` };
     }
     if (p === 'glass') {
-      return { t: 'Liquid Glass', h: `<div class="st-scene"><div class="sky"></div><div class="hill"></div><div class="ring"></div><div class="ring r2"></div>
-        <div class="st-demo">${LGON() ? `<lg-button class="st-lg-dc" radius="32" aria-label="フィルタ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M7.5 12h9M10 16h4"/></svg></lg-button><lg-button class="st-lg-dp" aria-label="検索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>検索</lg-button>` : `<span class="dc">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M7.5 12h9M10 16h4"/></svg>'}</span><span class="dp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>検索</span>`}</div>
-        <div class="st-scene-t"><b>Liquid Glass のプレビュー</b><span>タブバーやボタンの透け方</span></div></div>
+      // 本家の「Liquid Glass」画面と同じ構成：写真の上に丸いフィルターボタンと検索バー、下に文字のエリア
+      // 縁の屈折・反射光は本家の見た目に合わせた値（data 属性ではなく光学属性で指定）
+      const hbtn = (cls, label, inner) => (LGON()
+        ? `<lg-button class="${cls}" backdrop=".st-hero-img" refraction="24" bezel="0.9" curvature="3" chroma="0.12" specular="0.8" aria-label="${label}">${inner}</lg-button>`
+        : `<span class="st-hbtn ${cls}" role="img" aria-label="${label}">${inner}</span>`);
+      const icFilter = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14M7.5 12h9M10 16h4"/></svg>';
+      const icSearch = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>';
+      return { t: 'Liquid Glass', h: `<div class="st-hero-wrap"><div class="st-hero"><div class="st-hero-img" aria-hidden="true"></div>
+        <div class="st-hero-bar">${hbtn('st-hfilter', 'フィルタ', icFilter)}${hbtn('st-hsearch', '検索', icSearch + '<span>検索</span>')}</div>
+        <div class="st-hero-t"><b>Liquid Glass のプレビュー</b><span>タブバーやボタンの透け方</span></div></div></div>
         <div class="st-grp slider-card">${sliderHTML('gl', a.gl, 0, 1, [0, 0.5, 1], IC_CLEAR, IC_TINT)}</div>
         <p class="st-cap">“クリア”を選択すると透明度が高くなり、“色合い調整”を選択すると不透明度が上がってコンテンツやコントロールのコントラストが強くなります。</p>` };
     }

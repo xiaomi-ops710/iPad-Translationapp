@@ -2,11 +2,12 @@
  * 更新を配信するときは VERSION を上げる（古いキャッシュは activate 時に消える）。
  * ・同じオリジンの GET だけを扱い、翻訳 API や Gemini などの外部リクエストには一切触れない。
  * ・アプリ本体は「ネットワーク優先 → 失敗したらキャッシュ」。オンラインなら常に最新が表示され、古い版に固まらない。 */
-const VERSION = 'v2';
+const VERSION = 'v4';
 const CACHE = 'xlate-' + VERSION;
 const SHELL = [
   './', 'index.html', 'style.css', 'app.js', 'icons.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
+  'img/wallpaper-light.jpg', 'img/wallpaper-dark.jpg', 'img/park.jpg',
 ];
 
 self.addEventListener('install', (e) => {
