@@ -526,18 +526,20 @@
   function popLiquid(p, anchor, x, y, pw, ph) {
     p.classList.toggle('has-ic', !!p.querySelector('.pi'));
     if (reduceMotion() || !p.animate) return;
+    // 本家と同じ：ボタンの位置・大きさから、角丸のメニューへ広がって開く（にじみを伴う）
     const r = anchor.getBoundingClientRect();
-    const ox = Math.min(pw, Math.max(0, r.left + r.width / 2 - x)), oy = Math.min(ph, Math.max(0, r.top + r.height / 2 - y));
-    p.style.animation = 'none'; p.style.transformOrigin = `${ox}px ${oy}px`;
+    const sx = Math.max(0.08, r.width / pw), sy = Math.max(0.08, r.height / ph);
+    const dx = r.left - x, dy = r.top - y;
+    p._box = { dx, dy, sx, sy };
+    p.style.animation = 'none'; p.style.transformOrigin = '0px 0px';
     p.animate([
-      { opacity: 0, transform: 'scale(.1,.08)', filter: 'blur(8px)' },
-      { opacity: 1, transform: 'scale(.55,.34)', filter: 'blur(4px)', offset: 0.2 },
-      { transform: 'scale(1.05,1.09)', filter: 'blur(0px)', offset: 0.58 },
-      { transform: 'scale(.99,.985)', offset: 0.8 },
-      { opacity: 1, transform: 'scale(1,1)', filter: 'blur(0px)' }
-    ], { duration: 620, easing: 'cubic-bezier(.3,.85,.35,1)', fill: 'both' });
+      { opacity: 0.2, transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})`, filter: 'blur(9px)', offset: 0 },
+      { opacity: 1, transform: `translate(${dx * 0.35}px,${dy * 0.35}px) scale(${sx + (1 - sx) * 0.7},${sy + (1 - sy) * 0.7})`, filter: 'blur(2px)', offset: 0.45 },
+      { opacity: 1, transform: 'translate(0px,0px) scale(1.012,1.012)', filter: 'blur(0px)', offset: 0.82 },
+      { opacity: 1, transform: 'translate(0px,0px) scale(1,1)', filter: 'blur(0px)' }
+    ], { duration: 430, easing: 'cubic-bezier(.22,.9,.3,1)', fill: 'both' });
     $$('.pop-item,.pop-h,.pop-sep', p).forEach((el, i) => {
-      el.animate([{ opacity: 0, transform: 'translateY(-10px) scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 380, delay: 170 + i * 26, easing: 'cubic-bezier(.3,1.25,.4,1)', fill: 'both' });
+      el.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 240, delay: 150 + i * 22, easing: 'ease-out', fill: 'both' });
     });
   }
   /* 項目を長押し／ホバーすると、薄い楕円が現れて指に追従して滑る */
@@ -571,9 +573,15 @@
     const p = $('#pop'); popCb = null; if (!p) return;
     p.removeAttribute('id'); p.style.pointerEvents = 'none';
     if (reduceMotion() || !p.animate) { p.remove(); return; }
-    const a = p.animate([{ opacity: 1, transform: 'scale(1,1)', filter: 'blur(0px)' }, { opacity: 0.9, transform: 'scale(.9,.8)', filter: 'blur(1px)', offset: 0.4 }, { opacity: 0, transform: 'scale(.14,.1)', filter: 'blur(8px)' }], { duration: 260, easing: 'cubic-bezier(.5,.05,.85,.4)', fill: 'forwards' });
-    $$('.pop-item,.pop-h,.pop-sep', p).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }));
-    a.onfinish = () => p.remove(); setTimeout(() => p.remove(), 500);
+    const bx = p._box || { dx: 0, dy: 0, sx: 0.2, sy: 0.2 };
+    p.style.animation = 'none'; p.style.transformOrigin = '0px 0px';
+    const a = p.animate([
+      { opacity: 1, transform: 'translate(0px,0px) scale(1,1)', filter: 'blur(0px)', offset: 0 },
+      { opacity: 1, transform: `translate(${bx.dx * 0.4}px,${bx.dy * 0.4}px) scale(${bx.sx + (1 - bx.sx) * 0.4},${bx.sy + (1 - bx.sy) * 0.4})`, filter: 'blur(3px)', offset: 0.5 },
+      { opacity: 0, transform: `translate(${bx.dx}px,${bx.dy}px) scale(${bx.sx},${bx.sy})`, filter: 'blur(8px)', offset: 1 }
+    ], { duration: 280, easing: 'cubic-bezier(.5,0,.75,0)', fill: 'forwards' });
+    $$('.pop-item,.pop-h,.pop-sep', p).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 100, fill: 'forwards' }));
+    a.onfinish = () => p.remove(); setTimeout(() => p.remove(), 420);
   }
   function showPop(anchor, html, o = {}) {
     closePop();
@@ -1531,7 +1539,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       return { t: '設定', h: `<div class="st-appicon">${I.gearApp}</div><div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
         <div class="st-grp"><button class="st-row nav" data-act="st:ai"><span>AI翻訳（Gemini）</span><em>${hasAI() ? esc(AI().model) : '未設定'}</em>${chevR}</button></div>
         <p class="st-cap">Siri・カメラ翻訳・翻訳の高速化に Gemini を使います。</p>
-        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.1</em></div></div>` };
+        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.2</em></div></div>` };
     }
     if (p === 'appearance') {
       const eff = effTheme();

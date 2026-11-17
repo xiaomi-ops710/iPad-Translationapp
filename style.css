@@ -1069,3 +1069,28 @@ lg-button.st-lg-back .lg-button__label svg{width:24px;height:24px}
 lg-panel.sheet-lg{color:var(--ink);background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 lg-panel.sheet-lg>.lg-panel__body{padding:6px 0 calc(env(safe-area-inset-bottom,0px) + 16px)}
 
+/* ======================================================================
+   v1.2：サイドバー（Files アプリの比率。画面幅 1032pt 基準の vw）
+   ====================================================================== */
+#sidebar{width:clamp(240px,27.5vw,340px)}
+.sb-in{width:100%;padding:1.4vw 1.4vw 2vw}
+.sb-item{min-height:4.27vw;padding:0 1.6vw;gap:1.5vw;font-size:clamp(14px,1.72vw,19px)}
+.sb-item svg{width:clamp(18px,1.95vw,26px);height:clamp(18px,1.95vw,26px);min-width:18px;min-height:18px}
+.sb-sec{font-size:clamp(13px,1.6vw,17px);padding:2.6vw 1.6vw .8vw}
+
+/* ======================================================================
+   v1.2：メニュー・シートがドラッグで動かないように（ページのパン・スクロールを止める）
+   ====================================================================== */
+#pop,.pop{touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none}
+.pop-lg{touch-action:pan-y;overscroll-behavior:contain}
+.sheet,.sheet-lg{touch-action:pan-y;overscroll-behavior:contain}
+.sheet-bg{touch-action:none}
+body:has(#pop),body:has(.sheet){overflow:hidden;overscroll-behavior:none}
+
+/* ======================================================================
+   v1.2：外観モードの壁紙（本家 IMG_4916 の鮮明なタイルに照合して求めた位置）
+   時計下の帯は、本家どおり左右中央に置く
+   ====================================================================== */
+.st-pv.light,.st-pv.dark{background-size:114% auto;background-position:97% 39%}
+.st-pv i{left:15.4%;width:69%}
+
