@@ -1322,7 +1322,8 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       if (m.r === 'z') return quizBlock(i, m.quiz);
       return `<div class="m-a${m.err ? ' err' : ''}">${md(m.t)}${m.err ? '' : `<div class="cact"><button data-act="s:cspeak" data-i="${i}">${I.play}読み上げ</button><button data-act="s:cvocab" data-i="${i}">＋単語帳へ</button><button data-act="s:ccopy" data-i="${i}">コピー</button></div>`}</div>`;
     }).join('');
-    const busy = SR.asking || SR.loading ? `<div class="m-a typing"><i></i><i></i><i></i>${SR.loading ? '<em>問題を作成しています…</em>' : ''}</div>` : '';
+    const ringDots = Array.from({ length: 8 }, (_, k) => `<i style="--k:${k}"></i>`).join('');
+    const busy = SR.asking || SR.loading ? `<div class="m-a typing"><span class="sp-ring" aria-hidden="true">${ringDots}</span><em>${SR.loading ? '問題を作成しています…' : '調べています…'}</em></div>` : '';
     return out + busy;
   }
   function welcomeHTML() {
@@ -1564,7 +1565,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   }
   const IC_CLEAR = '<svg viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2.5" width="17" height="13" rx="4.5"/><rect x="8.5" y="8" width="17" height="13" rx="4.5"/></svg>';
   const IC_TINT = '<svg viewBox="0 0 28 24" fill="currentColor" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2.5" width="17" height="13" rx="4.5" fill="none"/><rect x="8.5" y="8" width="17" height="13" rx="4.5"/></svg>';
-  const APP_VERSION = '1.8';
+  const APP_VERSION = '2.0';
   const SP_IC = {
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.4 2.4 2.7-.6.6 2.7 2.4 1.4-1.2 2.4 1.2 2.4-2.4 1.4-.6 2.7-2.7-.6L12 21.2l-1.4-2.4-2.7.6-.6-2.7-2.4-1.4 1.2-2.4-1.2-2.4 2.4-1.4.6-2.7 2.7.6z"/></svg>',
     person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="7.2" r="1.2" fill="currentColor" stroke="none"/><path d="M7.4 9.6h9.2M12 9.6v4.4M9.4 18.2l2.6-4.2 2.6 4.2"/></svg>',
@@ -1576,6 +1577,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     text: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l4.5-12 4.5 12M4.7 15.2h5.6"/><path d="M14.5 19l3-8 3 8M15.3 16.6h3.4"/></svg>',
     motion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg>',
     key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="15" r="3.8"/><path d="M10.8 12.2L19 4M16 7l2.4 2.4M14 9l2 2"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M11 4.5l1.7 4.6 4.6 1.7-4.6 1.7L11 17.1l-1.7-4.6-4.6-1.7 4.6-1.7z"/><path d="M18 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>',
     check: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#8e8e93"/><path d="M7.8 12.4l2.8 2.8 5.6-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
   const SP_STATE = { checking: '確認しています…', latest: 'アプリは最新です', available: '新しい版を適用しています…', none: 'オフライン用の準備がまだありません', error: '確認できませんでした' };
@@ -1589,6 +1591,10 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     return { dev: ipad ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : 'Mac / PC', os: m ? `iPadOS ${m[1]}.${m[2]}${m[3] ? '.' + m[3] : ''}` : (ipad ? 'iPadOS' : '—') };
   };
   // iPad の設定（iPadOS 風）：左のカテゴリに対応する各ページ。hero は詳細の上の説明カード
+  // iPhone の設定（iOS 風の角丸グループ）用の行
+  const iosRow = (act, p, bg, ic, label, val, chev = true) => `<button class="ios-row" data-name="${label}" data-act="${act}"${p ? ` data-p="${p}"` : ''}><span class="ios-ic${bg === 'orb' ? ' sp-orb' : ''}"${bg === 'orb' ? '' : ` style="background:${bg}"`}>${ic}</span><span class="ios-lab">${label}</span>${val != null ? `<em>${val}</em>` : ''}${chev ? chevR : ''}</button>`;
+  const iosInfo = (bg, ic, label, val) => `<div class="ios-row"><span class="ios-ic" style="background:${bg}">${ic}</span><span class="ios-lab">${label}</span><em>${val}</em></div>`;
+  const iosSearch = () => `<div class="ios-search">${LGON() ? '<lg-panel class="ios-sq-p" radius="capsule">' : '<div class="ios-sq-p ios-sq-plain">'}<div class="ios-sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg><input id="stq" type="search" placeholder="検索" autocomplete="off" autocorrect="off" spellcheck="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></div>${LGON() ? '</lg-panel>' : '</div>'}</div>`;
   const SPLIT_PAGES = {
     general: () => ({ t: '一般', hero: { ic: I.gearApp, title: '一般', desc: 'ソフトウェアアップデート、アプリの情報、ストレージ、アプリの共有など、アプリ全体の設定を管理します。' },
       h: `<div class="st-grp">${spRow('st:go', 'info', SP_IC.info, '情報', null)}${spRow('st:go', 'update', SP_IC.update, 'ソフトウェアアップデート', null)}${spRow('st:go', 'storage', SP_IC.storage, 'ストレージ', null)}</div><div class="st-grp">${spRow('st:share', '', SP_IC.share, 'アプリを共有', null)}</div>` }),
@@ -1611,10 +1617,11 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     const a = AP();
     if (SPLIT_PAGES[p]) return SPLIT_PAGES[p]();
     if (p === 'root') {
-      return { t: '設定', h: `<div class="st-appicon">${I.gearApp}</div><div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
-        <div class="st-grp"><button class="st-row nav" data-act="st:ai"><span>AI翻訳（Gemini）</span><em>${hasAI() ? esc(AI().model) : '未設定'}</em>${chevR}</button></div>
-        <p class="st-cap">Siri・カメラ翻訳・翻訳の高速化に Gemini を使います。</p>
-        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>${APP_VERSION}</em></div></div>` };
+      const mode = a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト';
+      return { t: '設定', h: `<h1 class="ios-title">設定</h1>
+        <div class="ios-grp">${iosRow('st:go', 'general', '#8e8e93', SP_IC.gear, '一般', null)}${iosRow('st:go', 'access', '#0a84ff', SP_IC.person, 'アクセシビリティ', null)}${iosRow('st:go', 'siri', 'orb', '', 'Siri', null)}${iosRow('st:go', 'appearance', '#1c1c1e', SP_IC.half, '外観', mode)}${iosRow('st:ai', '', '#5e5ce6', SP_IC.spark, 'AI翻訳（Gemini）', hasAI() ? esc(AI().model) : '未設定')}</div>
+        <div class="ios-grp">${iosInfo('#8e8e93', SP_IC.info, 'バージョン', APP_VERSION)}</div>
+        ${iosSearch()}` };
     }
     if (p === 'appearance') {
       const eff = effTheme();
@@ -1730,7 +1737,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       d.addEventListener('input', (e) => {
         const sl = e.target.closest && e.target.closest('lg-slider');
         if (sl) lgSliderApply(sl);
-        if (e.target && e.target.id === 'stq') { const q = e.target.value.trim(); $$('.sp-item').forEach((b) => { b.hidden = !!q && !(b.dataset.name || '').includes(q); }); }
+        if (e.target && e.target.id === 'stq') { const q = e.target.value.trim(); $$('[data-name]').forEach((b) => { b.hidden = !!q && !(b.dataset.name || '').includes(q); }); }
       });
     }
     if (!isPhone()) { renderSplit(d, dir, pg); glassifyAll(); return; }
@@ -1740,7 +1747,11 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     const backBtn = LGON()
       ? `<lg-button class="st-lg-back" radius="22" refraction="18" bezel="0.9" curvature="3" specular="0.9" specular-width="2" chroma="0.08" data-act="st:back" aria-label="${backLabel}">${backIc}</lg-button>`
       : `<button class="st-circ" data-act="st:back" aria-label="${backLabel}">${backIc}</button>`;
-    d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}"><div class="st-bar">${backBtn}<b>${pg.t}</b><span class="st-circ ghost"></span></div><div class="st-scroll"><div class="st-body">${pg.h}</div></div></div>`;
+    const prevT = root ? '' : settingsPage(SET.stack[SET.stack.length - 2]).t;
+    const phBar = root
+      ? `<span class="ios-ph"></span><b></b><button class="ios-close" data-act="st:back" aria-label="閉じる">${I.x}</button>`
+      : `<button class="ios-back" data-act="st:back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4.5 7.5 12l7.5 7.5"/></svg><span>${esc(prevT)}</span></button><b>${pg.t}</b><span class="ios-ph"></span>`;
+    d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}"><div class="st-bar">${phBar}</div><div class="st-scroll"><div class="st-body">${pg.h}</div></div></div>`;
     glassifyAll();
   }
   function openSettings() { SET.stack = isPhone() ? ['root'] : ['general']; SET.storage = null; SET.upd = null; closePop(); renderSettings(); }

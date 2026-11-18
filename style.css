@@ -1259,3 +1259,89 @@ lg-panel.sp-search>.lg-panel__body{display:flex;width:100%;height:100%}
 html.lowtr .tabs,html.lowtr .pop,html.lowtr .sheet,html.lowtr #sidebar{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 html.lowtr lg-panel{--lg-tint:rgb(28 28 30 / .8)}
 
+/* ======================================================================
+   v1.9：iPhone の設定（iOS の設定に寄せる）
+   ====================================================================== */
+@media (max-width:699px){
+  #settings .st-wrap{position:absolute;inset:0}
+  #settings .st-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:52px;padding:calc(var(--safe-area-inset-top,0px) + 8px) 14px 0;box-sizing:border-box}
+  #settings .st-bar b{font-size:17px;font-weight:600;text-align:center;white-space:nowrap}
+  #settings .ios-ph{display:block;width:34px}
+  #settings .ios-back{justify-self:start;display:flex;align-items:center;gap:0;border:0;background:none;color:#0a84ff;font:inherit;font-size:17px;padding:0 6px 0 0;max-width:150px}
+  #settings .ios-back svg{width:22px;height:22px;flex:none}
+  #settings .ios-back span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #settings .ios-close{justify-self:end;width:34px;height:34px;border-radius:50%;border:0;padding:0;background:rgba(120,120,128,.26);color:var(--ink);display:grid;place-items:center}
+  #settings .ios-close svg{width:15px;height:15px}
+  #settings .st-scroll{padding-bottom:96px}
+  #settings .ios-title{font-size:34px;font-weight:700;margin:6px 16px 16px;letter-spacing:.2px}
+  #settings .ios-grp{background:var(--card);border-radius:10px;margin:0 16px 22px;overflow:hidden;position:relative}
+  #settings .ios-row{position:relative;display:flex;align-items:center;width:100%;min-height:44px;padding:0 14px 0 0;border:0;background:none;color:var(--ink);font:inherit;font-size:17px;text-align:left;box-sizing:border-box}
+  #settings .ios-row+.ios-row::before{content:"";position:absolute;left:60px;right:0;top:0;height:.5px;background:var(--line);pointer-events:none}
+  #settings .ios-ic{width:29px;height:29px;border-radius:7px;flex:none;display:grid;place-items:center;color:#fff;margin:0 12px 0 16px}
+  #settings .ios-ic svg{width:19px;height:19px}
+  #settings .ios-ic.sp-orb{background:conic-gradient(from 200deg,#60a5fa,#c084fc,#f472b6,#fb923c,#fde047,#4ade80,#38bdf8,#60a5fa);box-shadow:inset 0 0 5px rgba(255,255,255,.6)}
+  #settings .ios-lab{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #settings .ios-row>em{font-style:normal;color:var(--sub);margin-left:8px;font-size:17px;white-space:nowrap}
+  #settings .ios-row>svg{width:13px;height:13px;color:#c7c7cc;flex:none;margin-left:6px;stroke-width:2.4}
+  #settings .ios-row[hidden]{display:none}
+  #settings .ios-search{position:fixed;left:16px;right:16px;bottom:calc(var(--safe-area-inset-bottom,0px) + 14px);z-index:6}
+  #settings lg-panel.ios-sq-p{display:flex;padding:0;background:none;box-shadow:none;color:var(--ink);height:44px}
+  #settings lg-panel.ios-sq-p>.lg-panel__body{display:flex;width:100%;height:100%}
+  #settings .ios-sq-plain{background:rgba(120,120,128,.26);border-radius:999px;height:44px;display:flex;backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6)}
+  #settings .ios-sq{display:flex;align-items:center;gap:8px;width:100%;height:44px;padding:0 16px;box-sizing:border-box;color:var(--sub)}
+  #settings .ios-sq svg{width:19px;height:19px;flex:none}
+  #settings .ios-sq input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:17px;color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+  /* iPhone では st-grp / st-row も角丸グループ・インセット区切りに */
+  #settings .st-grp{margin:0 16px 22px;border-radius:10px}
+  #settings .st-row{min-height:44px;padding:0 16px}
+  #settings .st-row+.st-row::before{left:16px}
+
+  /* 下部タブバー：添付 7・2 枚目の比率（ラベル小さめ、選択は黒い枠＋ティール色） */
+  .phone .tab{font-size:10.5px;font-weight:600;letter-spacing:0;gap:2px}
+  .phone .tab .tic svg{width:25px;height:25px}
+  .phone .thumb{background:rgba(0,0,0,.52)!important}
+  .phone .tab.on{color:var(--teal,#5ad0de)}
+  .phone lg-panel.tabs{--lg-tint:rgb(34 34 38 / .6)}
+
+  /* メニュー：添付 4 枚目（アイコン列・文字の位置・区切り線の余白） */
+  .pop-lg{border-radius:28px;padding:6px 0}
+  .pop-item{padding-left:70px;padding-right:20px}
+  .pop-item .ck{left:16px}
+  .pop-item .pi{left:30px}
+  .pop-sep{margin:6px 22px 6px 66px;background:rgba(255,255,255,.14)}
+}
+
+/* Siri の入力欄：添付 9・10 枚目（＋・入力欄・マイクの大きさ） */
+.sr-comp .sr-circ{width:56px;height:56px}
+.sr-comp .sr-circ svg{width:24px;height:24px}
+.sr-input{min-height:56px;border-radius:28px;padding:14px 20px}
+.sr-input textarea{font-size:calc(17px*var(--ts,1))}
+
+/* ======================================================================
+   v1.10：翻訳の上部・タブの色・Siri の会話（添付の画面に合わせる）
+   ====================================================================== */
+/* 翻訳の大きな見出し：上のボタンとの間隔を本家に合わせる */
+.phone .ph-large{font-size:calc(36px*var(--ts,1));font-weight:800;margin:14px 6px 18px;letter-spacing:.005em}
+
+/* 下部タブの色：形は変えず、塗りの色だけを本家に（未選択は白、選択はティール） */
+@media (max-width:699px){
+  .phone .tab{color:#fff}
+  .phone .tab span{color:inherit}
+  .phone .tab.on{color:var(--teal,#5ad0de)}
+  .phone .tab .tic svg [fill="#fff"],.phone .tab .tic svg [fill="#b4b4b9"]{fill:currentColor}
+}
+
+/* Siri：調べています…（8 つの光る点がリングで回る） */
+.m-a.typing{display:flex;align-items:center;gap:12px;padding:8px 2px}
+.m-a.typing .sp-ring{position:relative;width:26px;height:26px;flex:none;animation:spRing 1.4s linear infinite}
+.m-a.typing .sp-ring i{position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.9);transform:rotate(calc(var(--k) * 45deg)) translateY(-10px);opacity:.18;animation:spDot 1.4s linear infinite;animation-delay:calc(var(--k) * -.175s)}
+.m-a.typing em{font-style:normal;color:var(--ink);opacity:.82;font-size:calc(17px*var(--ts,1))}
+@keyframes spRing{to{transform:rotate(360deg)}}
+@keyframes spDot{0%,100%{opacity:.18}12%{opacity:1}40%{opacity:.25}}
+
+/* Siri：吹き出し（ユーザー）と回答の文字組み */
+.m-u>div{border-radius:24px;padding:11px 18px;font-size:calc(17px*var(--ts,1));line-height:1.45;background:#2c2c2e}
+.m-u>div::after{background:#2c2c2e}
+.m-a{font-size:calc(17px*var(--ts,1));line-height:1.55}
+.m-a strong,.m-a b{font-weight:700}
+
