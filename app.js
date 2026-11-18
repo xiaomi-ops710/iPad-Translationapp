@@ -14,6 +14,22 @@
   const LGON = () => !!(window.customElements && customElements.get('lg-switch') && customElements.get('lg-slider') && customElements.get('lg-button') && customElements.get('lg-panel'));
   // 添付画像から作ったアイコン（輪郭を SVG 化。mask を使わないので環境に依存せず表示される）
   const ICON_SVG = {"camera": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 8.5A2.5 2.5 0 0 1 5.5 6h2l1.5-2.2h6.9L17.5 6h1A2.5 2.5 0 0 1 21 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5z\"/><circle cx=\"12\" cy=\"12.6\" r=\"3.4\"/><circle cx=\"17.6\" cy=\"9.6\" r=\".8\" fill=\"currentColor\" stroke=\"none\"/></svg>", "photos": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3.5\" y=\"8\" width=\"13\" height=\"11.5\" rx=\"2.6\"/><path d=\"M8.6 8V6.6a2.6 2.6 0 0 1 2.6-2.6H17.4a2.6 2.6 0 0 1 2.6 2.6v7.6a2.6 2.6 0 0 1-2.6 2.6h-1.4\"/><circle cx=\"8.3\" cy=\"11.6\" r=\"1.1\" fill=\"currentColor\" stroke=\"none\"/><path d=\"M4.2 18.2l3.6-3.3 2.4 2.1 2.1-1.8 3.4 3\"/></svg>", "torch": "<svg viewBox=\"0 0 256 256\" aria-hidden=\"true\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M125 149 L122 151 L121 157 L124 161 L129 162 L133 159 L134 153 L130 149 Z M78 41 L82 62 L94 81 L99 93 L100 233 L107 242 L113 245 L142 245 L152 238 L156 228 L156 93 L161 81 L173 62 L177 41 Z M125 111 L135 113 L142 122 L142 160 L140 164 L132 170 L123 170 L119 168 L113 160 L113 122 L120 113 Z M78 22 L78 34 L176 34 L176 18 L172 12 L165 9 L90 9 L81 14 Z\"/></svg>"};
+  // 既存の要素を Liquid Glass の部品に置き換える（中身・ID・data-act・クラスはそのまま引き継ぐ）
+  function lgSwap(el, tag, radius) {
+    const g = document.createElement(tag);
+    for (const a of Array.from(el.attributes)) g.setAttribute(a.name, a.value);
+    if (radius) g.setAttribute('radius', radius);
+    while (el.firstChild) g.appendChild(el.firstChild);
+    el.replaceWith(g);
+    return g;
+  }
+  // 画面に出ているメニュー・設定の枠・丸いボタンを、順に Liquid Glass 版へ（部品が読めないときは何もしない）
+  function glassifyAll() {
+    if (!LGON()) return;
+    document.querySelectorAll('.st-grp:not(lg-panel)').forEach((el) => lgSwap(el, 'lg-panel', '34'));
+    document.querySelectorAll('button.swap:not(lg-button),button.mic:not(lg-button),button.clr:not(lg-button),button.play:not(lg-button),button.lang-sel:not(lg-button)')
+      .forEach((el) => lgSwap(el, 'lg-button', 'capsule'));
+  }
   // 丸いボタン：Liquid Glass 版（lg-button）。data-act の処理はそのまま使える
   const lgCircle = (cls, act, label, icon) => (LGON()
     ? `<lg-button class="${cls}" radius="capsule" data-act="${act}" aria-label="${label}">${icon}</lg-button>`
@@ -384,6 +400,7 @@
     if (!$('#sidebar')) buildShell();
     updateChrome();
     renderContent(!!o.anim);
+    glassifyAll();
     if (!ready) {
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(updateThumbs);
       requestAnimationFrame(() => requestAnimationFrame(() => { ready = true; app.classList.add('ready'); updateThumbs(); }));
@@ -413,7 +430,7 @@
     </article>`;
   }
   function liveHTML() {
-    return `<section class="card live" id="live">
+    return `${LGON() ? '<lg-panel class="card live" id="live" radius="34">' : '<section class="card live" id="live">'}
       <div class="half l"><div class="lbl"><button class="lang-sel" data-lang="src" id="lblS"></button></div>
         <div class="row"><textarea id="inp" rows="1" enterkeyhint="go" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="テキストを入力"></textarea>
         <div class="tools"><button class="clr" id="clr" data-act="clear" aria-label="消去">${I.clear}</button><button class="mic" id="micL" data-act="micL" aria-label="音声入力">${I.mic}</button></div></div></div>
@@ -422,7 +439,7 @@
         <div class="row"><div class="tx t ph" id="out" dir="auto"></div>
         <div class="tools"><button class="play teal" id="playR" data-act="playLive" aria-label="翻訳を再生">${I.play}</button><button class="mic t" id="micR" data-act="micR" aria-label="音声入力">${I.mic}</button></div></div>
         <div class="acts" id="acts"><button data-act="expandLive" aria-label="拡大">${I.expand}</button><button data-act="favLive" aria-label="お気に入り">${I.star}</button><button data-act="copyLive" aria-label="コピー">${I.copy}</button><span id="lat" class="lat"></span></div></div>
-    </section>`;
+    ${LGON() ? '</lg-panel>' : '</section>'}`;
   }
   function favHTML() {
     const favs = S.history.filter((h) => h.fav);
@@ -1552,7 +1569,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       return { t: '設定', h: `<div class="st-appicon">${I.gearApp}</div><div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
         <div class="st-grp"><button class="st-row nav" data-act="st:ai"><span>AI翻訳（Gemini）</span><em>${hasAI() ? esc(AI().model) : '未設定'}</em>${chevR}</button></div>
         <p class="st-cap">Siri・カメラ翻訳・翻訳の高速化に Gemini を使います。</p>
-        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.5</em></div></div>` };
+        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.7</em></div></div>` };
     }
     if (p === 'appearance') {
       const eff = effTheme();
@@ -1627,6 +1644,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       ? `<lg-button class="st-lg-back" radius="22" refraction="18" bezel="0.9" curvature="3" specular="0.9" specular-width="2" chroma="0.08" data-act="st:back" aria-label="${backLabel}">${backIc}</lg-button>`
       : `<button class="st-circ" data-act="st:back" aria-label="${backLabel}">${backIc}</button>`;
     d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}"><div class="st-bar">${backBtn}<b>${pg.t}</b><span class="st-circ ghost"></span></div><div class="st-scroll"><div class="st-body">${pg.h}</div></div></div>`;
+    glassifyAll();
   }
   function openSettings() { SET.stack = ['root']; closePop(); renderSettings(); }
   function closeSettings() { const d = $('#settings'); if (!d) return; d.classList.remove('in'); setTimeout(() => d.remove(), 320); }
