@@ -1199,3 +1199,63 @@ lg-button.swap .lg-button__el,lg-button.mic .lg-button__el,lg-button.clr .lg-but
 lg-button.lang-sel{color:var(--ink);background:none;box-shadow:none}
 lg-button.lang-sel .lg-button__el{min-height:0;padding:6px 12px;color:inherit}
 
+/* ======================================================================
+   v1.8：iPad の設定（iPadOS 風の 2 ペイン）
+   ====================================================================== */
+#settings .sp-wrap{position:absolute;inset:0;display:flex;background:var(--bg);color:var(--ink);overflow:hidden}
+.sp-side{width:clamp(280px,29vw,380px);flex:none;align-self:stretch;display:flex;flex-direction:column;background:var(--card);padding:max(14px,var(--safe-area-inset-top,0px)) 12px 12px;box-sizing:border-box;border-right:.5px solid var(--line)}
+.sp-sbar{display:flex;justify-content:flex-end;align-items:center;height:40px}
+.sp-close{width:38px;height:38px;border-radius:50%;border:0;padding:0;background:rgba(120,120,128,.22);color:var(--ink);display:grid;place-items:center}
+.sp-close svg{width:18px;height:18px}
+.sp-search{margin:4px 4px 12px;height:44px;flex:none;display:flex;box-sizing:border-box}
+lg-panel.sp-search{display:flex;padding:0;background:none;box-shadow:none;color:var(--ink)}
+lg-panel.sp-search>.lg-panel__body{display:flex;width:100%;height:100%}
+.sp-search-plain{background:rgba(120,120,128,.22);border-radius:999px;width:100%}
+.sp-sq{display:flex;align-items:center;gap:8px;width:100%;height:44px;padding:0 14px;box-sizing:border-box;color:var(--sub)}
+.sp-sq svg{width:19px;height:19px;flex:none}
+.sp-sq input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:17px;color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+.sp-list{display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1;min-height:0}
+.sp-item{display:flex;align-items:center;gap:12px;width:100%;height:48px;padding:0 10px;box-sizing:border-box;border:0;border-radius:12px;background:transparent;color:var(--ink);font:inherit;font-size:17px;text-align:left}
+.sp-item[hidden]{display:none}
+.sp-item.on{background:#0a84ff;color:#fff}
+.sp-ic{width:28px;height:28px;border-radius:7px;flex:none;display:grid;place-items:center;color:#fff}
+.sp-ic svg{width:18px;height:18px}
+.sp-ic.sp-orb{background:conic-gradient(from 200deg,#60a5fa,#c084fc,#f472b6,#fb923c,#fde047,#4ade80,#38bdf8,#60a5fa);box-shadow:inset 0 0 5px rgba(255,255,255,.6)}
+.sp-orb-big{display:block;width:96px;height:96px;border-radius:50%;background:conic-gradient(from 200deg,#60a5fa,#c084fc,#f472b6,#fb923c,#fde047,#4ade80,#38bdf8,#60a5fa);box-shadow:inset 0 0 14px rgba(255,255,255,.6)}
+.sp-main{flex:1;min-width:0;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+.sp-scroll{padding:calc(16px + var(--safe-area-inset-top,0px)) 0 60px}
+.sp-bar{display:grid;grid-template-columns:52px 1fr 52px;align-items:center;height:60px;padding:0 3vw;position:sticky;top:0;z-index:4;background:var(--bg)}
+.sp-bar b{text-align:center;font-size:17px;font-weight:600}
+.sp-back{width:44px;height:44px;border-radius:50%;border:0;padding:0;background:rgba(120,120,128,.25);color:var(--ink);display:grid;place-items:center}
+.sp-back svg{width:22px;height:22px}
+.sp-ph{display:block;width:44px}
+.sp-body{padding:0 4vw}
+.sp-hero{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:26px 26px 28px;margin:0 0 26px;border-radius:26px;background:var(--card)}
+.sp-hero-ic{margin-bottom:10px}
+.sp-ic-lg{width:96px;height:96px;border-radius:22px;display:grid;place-items:center;color:#fff}
+.sp-ic-lg svg{width:54px;height:54px}
+.sp-hero h1{margin:6px 0 0;font-size:28px;font-weight:700;letter-spacing:.01em}
+.sp-hero p{margin:0;font-size:15px;line-height:1.45;color:var(--sub)}
+.sp-body .st-grp{margin-bottom:24px}
+.sp-body .st-row{padding:0 22px}
+.rico{display:inline-grid;place-items:center;width:28px;height:28px;flex:none;color:var(--sub);margin-right:14px}
+.rico svg{width:22px;height:22px}
+.sp-upd-top{display:flex;align-items:center;gap:16px;padding:22px 24px}
+.sp-upd-ic svg{width:46px;height:46px;flex:none;display:block}
+.sp-upd-t{display:block;font-size:19px;font-weight:600}
+.sp-upd-s{margin:4px 0 0;font-size:15px;color:var(--sub)}
+.sp-st-top{display:flex;justify-content:space-between;align-items:baseline;padding:20px 24px 12px;font-size:17px}
+.sp-st-top span{color:var(--sub);font-size:15px}
+.sp-bar-used{height:8px;margin:0 24px 20px;border-radius:999px;background:rgba(120,120,128,.28);overflow:hidden}
+.sp-bar-used i{display:block;height:100%;border-radius:999px;background:#0a84ff}
+.sp-field{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:52px;padding:0 22px;border-bottom:.5px solid var(--line)}
+.sp-field span{font-size:17px;flex:none}
+.sp-field input{flex:1;min-width:0;text-align:right;border:0;background:transparent;font:inherit;font-size:17px;color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+.sp-body .st-grp>.sp-field:last-child{border-bottom:0}
+#aiRes{color:var(--sub);font-size:15px}
+.sp-wrap.fwd .sp-main,.sp-wrap.back .sp-main{animation:spIn .32s cubic-bezier(.2,.9,.3,1) both}
+@keyframes spIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+/* 透明度を下げる：ガラスの色を濃くし、ぼかしを弱めて文字を読みやすくする */
+html.lowtr .tabs,html.lowtr .pop,html.lowtr .sheet,html.lowtr #sidebar{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html.lowtr lg-panel{--lg-tint:rgb(28 28 30 / .8)}
+

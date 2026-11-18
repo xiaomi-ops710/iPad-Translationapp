@@ -1517,7 +1517,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   // 「クリア ↔ 色合い調整」に合わせて、玻璃の色合いと磨りガラスのぼかしを変える（本家の一番右＝最もすりガラス）
   function syncGlassLook(g) {
     const c = Math.round(255 - 210 * g);
-    document.documentElement.style.setProperty('--lg-tint', `rgb(${c} ${c} ${c} / ${(0.12 + 0.36 * g).toFixed(2)})`);
+    document.documentElement.style.setProperty('--lg-tint', `rgb(${c} ${c} ${c} / ${Math.min(0.95, 0.12 + 0.36 * g + (AP().lowtr ? 0.35 : 0)).toFixed(2)})`);
     document.querySelectorAll('.st-hero lg-button').forEach((b) => {
       try { if (b.surface && b.surface.glass) b.surface.glass.update({ blur: 0.5 + 6 * g }); } catch (e) { /* 更新できなくても見た目の色合いは反映される */ }
     });
@@ -1525,6 +1525,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   function applyAppearance() {
     const a = AP(), r = document.documentElement;
     syncGlassLook(a.gl);
+    document.documentElement.classList.toggle('lowtr', !!a.lowtr);
     if (a.mode === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', a.mode);
     r.style.colorScheme = a.mode === 'auto' ? 'light dark' : a.mode;
     r.style.setProperty('--gk', (0.4 + a.gl * 1.4).toFixed(3));
@@ -1543,7 +1544,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   const chevR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5.5l6.5 6.5L9 18.5"/></svg>';
   // iOS 26 の Liquid Glass コンポーネント（liquidglass.dev / components.js）が読み込めているか。
   // 読み込めない（オフライン等）場合は従来の描画を使うので、設定画面が使えなくなることはない。
-  const SW_LABEL = { auto: '自動', bold: '文字を太くする', rm: '視差効果を減らす' };
+  const SW_LABEL = { auto: '自動', bold: '文字を太くする', rm: '視差効果を減らす', lowtr: '透明度を下げる' };
   const swHTML = (k, on) => (LGON()
     ? `<lg-switch class="st-lg" data-k="${k}"${on ? ' checked' : ''} aria-label="${SW_LABEL[k] || k}"></lg-switch>`
     : `<button class="st-sw${on ? ' on' : ''}" role="switch" aria-checked="${on}" data-act="st:tg" data-k="${k}"><i></i></button>`);
@@ -1563,13 +1564,57 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   }
   const IC_CLEAR = '<svg viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2.5" width="17" height="13" rx="4.5"/><rect x="8.5" y="8" width="17" height="13" rx="4.5"/></svg>';
   const IC_TINT = '<svg viewBox="0 0 28 24" fill="currentColor" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2.5" width="17" height="13" rx="4.5" fill="none"/><rect x="8.5" y="8" width="17" height="13" rx="4.5"/></svg>';
+  const APP_VERSION = '1.8';
+  const SP_IC = {
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.4 2.4 2.7-.6.6 2.7 2.4 1.4-1.2 2.4 1.2 2.4-2.4 1.4-.6 2.7-2.7-.6L12 21.2l-1.4-2.4-2.7.6-.6-2.7-2.4-1.4 1.2-2.4-1.2-2.4 2.4-1.4.6-2.7 2.7.6z"/></svg>',
+    person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="7.2" r="1.2" fill="currentColor" stroke="none"/><path d="M7.4 9.6h9.2M12 9.6v4.4M9.4 18.2l2.6-4.2 2.6 4.2"/></svg>',
+    half: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.8"/><path d="M12 3.2a8.8 8.8 0 0 1 0 17.6z" fill="currentColor" stroke="none"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="6.5" y="2.8" width="11" height="18.4" rx="2.4"/><path d="M11 18.2h2"/></svg>',
+    update: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-2.05-4.95"/><path d="M19 4.5v4h-4"/></svg>',
+    storage: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 14.5l2.4-7a2 2 0 0 1 1.9-1.5h8.4a2 2 0 0 1 1.9 1.5l2.4 7v3.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M3.5 14.5h17"/><circle cx="17" cy="17" r=".9" fill="currentColor" stroke="none"/></svg>',
+    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v8.5a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5V11"/></svg>',
+    text: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l4.5-12 4.5 12M4.7 15.2h5.6"/><path d="M14.5 19l3-8 3 8M15.3 16.6h3.4"/></svg>',
+    motion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg>',
+    key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="15" r="3.8"/><path d="M10.8 12.2L19 4M16 7l2.4 2.4M14 9l2 2"/></svg>',
+    check: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#8e8e93"/><path d="M7.8 12.4l2.8 2.8 5.6-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  const SP_STATE = { checking: '確認しています…', latest: 'アプリは最新です', available: '新しい版を適用しています…', none: 'オフライン用の準備がまだありません', error: '確認できませんでした' };
+  const spRow = (act, p, ic, label, val, chev = true) => `<button class="st-row nav" data-act="${act}"${p ? ` data-p="${p}"` : ''}>${ic ? `<i class="rico">${ic}</i>` : ''}<span>${label}</span>${val != null ? `<em>${val}</em>` : ''}${chev ? chevR : ''}</button>`;
+  const spInfo = (k, v) => `<div class="st-row"><span>${k}</span><em>${v}</em></div>`;
+  const spSwitch = (k, label) => `<div class="st-row"><span>${label}</span>${swHTML(k, !!AP()[k])}</div>`;
+  const fmtBytes = (n) => (n >= 1e9 ? (n / 1e9).toFixed(2) + ' GB' : n >= 1e6 ? (n / 1e6).toFixed(1) + ' MB' : Math.max(0, Math.round(n / 1e3)) + ' KB');
+  const devInfo = () => {
+    const ua = navigator.userAgent || '', m = ua.match(/OS (\d+)[_.](\d+)(?:[_.](\d+))?/);
+    const ipad = /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    return { dev: ipad ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : 'Mac / PC', os: m ? `iPadOS ${m[1]}.${m[2]}${m[3] ? '.' + m[3] : ''}` : (ipad ? 'iPadOS' : '—') };
+  };
+  // iPad の設定（iPadOS 風）：左のカテゴリに対応する各ページ。hero は詳細の上の説明カード
+  const SPLIT_PAGES = {
+    general: () => ({ t: '一般', hero: { ic: I.gearApp, title: '一般', desc: 'ソフトウェアアップデート、アプリの情報、ストレージ、アプリの共有など、アプリ全体の設定を管理します。' },
+      h: `<div class="st-grp">${spRow('st:go', 'info', SP_IC.info, '情報', null)}${spRow('st:go', 'update', SP_IC.update, 'ソフトウェアアップデート', null)}${spRow('st:go', 'storage', SP_IC.storage, 'ストレージ', null)}</div><div class="st-grp">${spRow('st:share', '', SP_IC.share, 'アプリを共有', null)}</div>` }),
+    info: () => { const di = devInfo(), sw = !!(navigator.serviceWorker && navigator.serviceWorker.controller); const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+      return { t: '情報', h: `<div class="st-grp">${spInfo('アプリ名', '翻訳')}${spInfo('バージョン', APP_VERSION)}${spInfo('機種', di.dev)}${spInfo('OS', di.os)}${spInfo('画面サイズ', `${innerWidth} × ${innerHeight}`)}${spInfo('表示', standalone ? 'ホーム画面のアプリ' : 'ブラウザ')}${spInfo('オフライン利用', sw ? '利用できます' : '未対応')}</div>` }; },
+    update: () => { const st = SET.upd ? SP_STATE[SET.upd] : 'アプリの状態を確認できます';
+      return { t: 'ソフトウェアアップデート', h: `<div class="st-grp"><div class="sp-upd-top"><div class="sp-upd-ic">${SP_IC.check}</div><div><b class="sp-upd-t">${st}</b><p class="sp-upd-s">バージョン ${APP_VERSION}</p></div></div></div><div class="st-grp">${spInfo('現在のバージョン', APP_VERSION)}</div><div class="st-grp">${spRow('st:update', '', null, 'アップデートを確認', null, false)}</div><p class="st-cap">確認すると、新しい版があれば自動で取り込み、読み直します。</p>` }; },
+    storage: () => { if (!SET.storage && !SET.storageBusy) { SET.storageBusy = true; loadStorage(); }
+      const s = SET.storage || { usage: 0, quota: 0, files: 0 }, pct = s.quota ? Math.min(100, s.usage / s.quota * 100) : 0;
+      return { t: 'ストレージ', h: `<div class="st-grp"><div class="sp-st-top"><b>このアプリ</b><span>${fmtBytes(s.usage)}${s.quota ? ' / ' + fmtBytes(s.quota) : ''}</span></div><div class="sp-bar-used"><i style="width:${pct.toFixed(1)}%"></i></div></div><div class="st-grp">${spInfo('オフライン用ファイル', `${s.files} 件`)}${spInfo('保存先', 'この端末のブラウザ')}</div><div class="st-grp">${spRow('st:clear', '', null, '<span style="color:#ff453a">キャッシュを削除</span>', null, false)}</div><p class="st-cap">キャッシュを削除すると、アプリを読み直して最新の版を取り込みます。翻訳履歴やお気に入りは消えません。</p>` }; },
+    access: () => ({ t: 'アクセシビリティ', hero: { ic: `<span class="sp-ic-lg" style="background:#0a84ff">${SP_IC.person}</span>`, title: 'アクセシビリティ', desc: '文字の太さや透明度、動きの量など、見やすさと操作のしやすさを調整します。' },
+      h: `<div class="st-grp">${spRow('st:go', 'a11y-display', SP_IC.text, '画面表示とテキストサイズ', null)}${spRow('st:go', 'a11y-motion', SP_IC.motion, '動作', null)}</div>` }),
+    'a11y-display': () => ({ t: '画面表示とテキストサイズ', h: `<div class="st-grp">${spSwitch('bold', '文字を太くする')}${spSwitch('lowtr', '透明度を下げる')}</div><div class="st-grp">${spRow('st:go', 'textsize', SP_IC.text, 'テキストサイズ', `${Math.round(AP().ts * 100)}%`)}</div><p class="st-cap">透明度を下げると、ガラスの色を濃くして文字を読みやすくします。</p>` }),
+    'a11y-motion': () => ({ t: '動作', h: `<div class="st-grp">${spSwitch('rm', '視差効果を減らす')}</div><p class="st-cap">オンにすると、メニューの開閉やガラスの動きを控えめにします。</p>` }),
+    siri: () => ({ t: 'Siri', hero: { ic: '<span class="sp-orb-big"></span>', title: 'Siri', desc: '質問・問題の作成・単語帳に Gemini を使います。API キーはこの端末にだけ保存されます。' },
+      h: `<div class="st-grp">${spInfo('言語', '日本語')}</div><div class="st-grp">${spRow('st:go', 'apikey', SP_IC.key, 'APIキー', hasAI() ? '設定済み' : '未設定')}${spInfo('モデル', esc(AI().model))}</div>` }),
+    apikey: () => ({ t: 'APIキー', h: `<div class="st-grp"><label class="sp-field"><span>APIキー</span><input id="aiKey" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="AIza…" value="${esc(AI().key)}"></label><label class="sp-field"><span>モデル</span><input id="aiModel" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="gemini-3.6-flash" value="${esc(AI().model)}"></label></div><div class="st-grp"><button class="st-row" data-act="aiSave"><span>保存</span></button><button class="st-row" data-act="aiTest"><span>接続テスト</span></button><div class="st-row"><span id="aiRes"></span></div></div><p class="st-cap">キーはこの端末にだけ保存され、Google の API へ直接送信されます。公開サイトで使う場合は、Google AI Studio でキーの利用元を公開URLに制限してください。</p>` }),
+  };
   function settingsPage(p) {
     const a = AP();
+    if (SPLIT_PAGES[p]) return SPLIT_PAGES[p]();
     if (p === 'root') {
       return { t: '設定', h: `<div class="st-appicon">${I.gearApp}</div><div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
         <div class="st-grp"><button class="st-row nav" data-act="st:ai"><span>AI翻訳（Gemini）</span><em>${hasAI() ? esc(AI().model) : '未設定'}</em>${chevR}</button></div>
         <p class="st-cap">Siri・カメラ翻訳・翻訳の高速化に Gemini を使います。</p>
-        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.7</em></div></div>` };
+        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>${APP_VERSION}</em></div></div>` };
     }
     if (p === 'appearance') {
       const eff = effTheme();
@@ -1620,6 +1665,56 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     a[key] = key === 'ts' ? TS_STEPS[Math.max(0, Math.min(TS_STEPS.length - 1, Math.round(v)))] : v;
     applyAppearance();
   }
+  // 幅の広い画面（iPad）：左にカテゴリ、右に詳細（ページの仕組みは共通）
+  function renderSplit(d, dir, pg) {
+    const cat = SET.stack[0], isSub = SET.stack.length > 1;
+    const chev = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4.5 7.5 12l7.5 7.5"/></svg>';
+    const back = !isSub ? '' : (LGON() ? `<lg-button class="st-lg-back" radius="22" refraction="18" bezel="0.9" curvature="3" specular="0.9" specular-width="2" chroma="0.08" data-act="st:back" aria-label="戻る">${chev}</lg-button>` : `<button class="sp-back" data-act="st:back" aria-label="戻る">${chev}</button>`);
+    const items = [['general', '一般', '#8e8e93', SP_IC.gear], ['access', 'アクセシビリティ', '#0a84ff', SP_IC.person], ['siri', 'Siri', '', ''], ['appearance', '外観', '#1c1c1e', SP_IC.half]];
+    const icon = (id, bg, ic) => (id === 'siri' ? '<span class="sp-ic sp-orb"></span>' : `<span class="sp-ic" style="background:${bg}">${ic}</span>`);
+    const list = items.map(([id, t, bg, ic]) => `<button class="sp-item${cat === id ? ' on' : ''}" data-act="st:cat" data-p="${id}" data-name="${t}">${icon(id, bg, ic)}<span>${t}</span></button>`).join('');
+    const sq = `<div class="sp-sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg><input id="stq" type="search" placeholder="検索" autocomplete="off" autocorrect="off" spellcheck="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></div>`;
+    const search = LGON() ? `<lg-panel class="sp-search" radius="capsule">${sq}</lg-panel>` : `<div class="sp-search sp-search-plain">${sq}</div>`;
+    const side = `<aside class="sp-side"><div class="sp-sbar"><button class="sp-close" data-act="st:close" aria-label="閉じる">${I.x}</button></div>${search}<nav class="sp-list">${list}</nav></aside>`;
+    const hero = (!isSub && pg.hero) ? `<div class="sp-hero"><div class="sp-hero-ic">${pg.hero.ic}</div><h1>${pg.hero.title}</h1><p>${pg.hero.desc}</p></div>` : '';
+    const bar = isSub ? `<div class="sp-bar">${back}<b>${pg.t}</b><span class="sp-ph"></span></div>` : '';
+    const main = `<section class="sp-main"><div class="sp-scroll">${bar}<div class="sp-body">${hero}${pg.h}</div></div></section>`;
+    d.innerHTML = `<div class="sp-wrap${dir ? ' ' + dir : ''}">${side}${main}</div>`;
+  }
+  async function loadStorage() {
+    let usage = 0, quota = 0, files = 0;
+    try {
+      if (navigator.storage && navigator.storage.estimate) { const e = await navigator.storage.estimate(); usage = e.usage || 0; quota = e.quota || 0; }
+      if (window.caches) { for (const k of await caches.keys()) files += (await (await caches.open(k)).keys()).length; }
+    } catch (e) { /* 取得できなくても表示は続ける */ }
+    SET.storage = { usage, quota, files }; SET.storageBusy = false;
+    if (SET.stack[SET.stack.length - 1] === 'storage') renderSettings();
+  }
+  async function checkUpdate() {
+    SET.upd = 'checking'; renderSettings();
+    try {
+      const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null;
+      if (!reg) SET.upd = 'none';
+      else { await reg.update(); SET.upd = (reg.installing || reg.waiting) ? 'available' : 'latest'; }
+    } catch (e) { SET.upd = 'error'; }
+    renderSettings();
+  }
+  async function clearCache() {
+    if (!confirm('キャッシュを削除して、アプリを読み直します。よろしいですか？')) return;
+    try {
+      if (window.caches) { for (const k of await caches.keys()) await caches.delete(k); }
+      const rs = navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : [];
+      for (const r of rs) await r.unregister();
+    } catch (e) { /* 失敗しても読み直す */ }
+    location.reload();
+  }
+  async function shareApp() {
+    const data = { title: '翻訳', text: '翻訳アプリ', url: location.href.split('?')[0] };
+    try {
+      if (navigator.share) await navigator.share(data);
+      else { await navigator.clipboard.writeText(data.url); toast('リンクをコピーしました'); }
+    } catch (e) { /* キャンセル時は何もしない */ }
+  }
   function renderSettings(dir) {
     let d = $('#settings');
     const p = SET.stack[SET.stack.length - 1], pg = settingsPage(p), root = SET.stack.length === 1;
@@ -1635,8 +1730,10 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       d.addEventListener('input', (e) => {
         const sl = e.target.closest && e.target.closest('lg-slider');
         if (sl) lgSliderApply(sl);
+        if (e.target && e.target.id === 'stq') { const q = e.target.value.trim(); $$('.sp-item').forEach((b) => { b.hidden = !!q && !(b.dataset.name || '').includes(q); }); }
       });
     }
+    if (!isPhone()) { renderSplit(d, dir, pg); glassifyAll(); return; }
     const backLabel = root ? '閉じる' : '戻る';
     const chevLG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4.5 7.5 12l7.5 7.5"/></svg>';
     const backIc = root ? I.x : (LGON() ? chevLG : I.back);
@@ -1646,7 +1743,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}"><div class="st-bar">${backBtn}<b>${pg.t}</b><span class="st-circ ghost"></span></div><div class="st-scroll"><div class="st-body">${pg.h}</div></div></div>`;
     glassifyAll();
   }
-  function openSettings() { SET.stack = ['root']; closePop(); renderSettings(); }
+  function openSettings() { SET.stack = isPhone() ? ['root'] : ['general']; SET.storage = null; SET.upd = null; closePop(); renderSettings(); }
   function closeSettings() { const d = $('#settings'); if (!d) return; d.classList.remove('in'); setTimeout(() => d.remove(), 320); }
   function settingsAct(name, el, e) {
     const a = AP();
@@ -1654,6 +1751,11 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       case 'st:back': if (SET.stack.length > 1) { SET.stack.pop(); renderSettings('back'); } else closeSettings(); break;
       case 'st:go': SET.stack.push(el.dataset.p); renderSettings('fwd'); break;
       case 'st:ai': openSheet(); break;
+      case 'st:cat': SET.stack = [el.dataset.p]; renderSettings('fade'); break;
+      case 'st:close': closeSettings(); break;
+      case 'st:share': shareApp(); break;
+      case 'st:update': checkUpdate(); break;
+      case 'st:clear': clearCache(); break;
       case 'st:mode': a.mode = el.dataset.v; save(); applyAppearance(); renderSettings(); break;
       case 'st:tg': { if (Date.now() < swGuard) break; swSet(el, !el.classList.contains('on') && el.dataset.k !== 'auto' ? true : el.dataset.k === 'auto' ? a.mode !== 'auto' : false); break; }
       default: break;
