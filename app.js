@@ -12,11 +12,19 @@
   const I = window.XI; // icons.js（SF Symbols 風）
   // iOS 26 の Liquid Glass コンポーネント（components.js）が読み込めているか。読めない場合は従来の見た目のまま動く
   const LGON = () => !!(window.customElements && customElements.get('lg-switch') && customElements.get('lg-slider') && customElements.get('lg-button') && customElements.get('lg-panel'));
+  // 添付画像から作ったアイコン（輪郭を SVG 化。mask を使わないので環境に依存せず表示される）
+  const ICON_SVG = {"camera": "<svg viewBox=\"0 0 256 256\" aria-hidden=\"true\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M204 87 L198 91 L197 99 L202 104 L208 104 L213 100 L214 94 L211 89 Z M120 85 L100 92 L85 106 L77 122 L75 134 L76 148 L83 165 L96 179 L114 188 L136 189 L155 182 L170 168 L179 148 L179 127 L172 109 L159 95 L144 87 L135 85 Z M120 94 L135 94 L152 101 L163 112 L170 128 L171 140 L165 159 L153 172 L147 176 L135 180 L120 180 L110 177 L102 172 L90 159 L85 146 L85 128 L92 112 L108 98 Z M13 71 L9 82 L9 196 L13 207 L20 214 L30 218 L225 218 L235 214 L242 207 L246 196 L246 82 L242 71 L233 63 L222 60 L182 60 L179 59 L165 43 L156 38 L104 37 L90 43 L74 60 L27 61 L20 64 Z M21 76 L29 70 L67 70 L78 68 L82 66 L97 49 L104 46 L151 46 L158 49 L173 66 L180 69 L226 70 L230 72 L237 82 L237 196 L235 201 L229 207 L224 209 L31 209 L26 207 L20 201 L18 196 L18 83 Z\"/></svg>", "photos": "<svg viewBox=\"0 0 256 256\" aria-hidden=\"true\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M48 109 L41 115 L39 125 L45 134 L49 136 L57 136 L65 130 L67 120 L65 115 L60 110 Z M68 31 L62 37 L58 48 L58 78 L24 80 L14 87 L10 95 L9 206 L13 218 L21 225 L31 228 L175 228 L186 224 L192 218 L196 208 L196 180 L198 178 L232 177 L242 169 L245 162 L246 51 L243 39 L234 30 L223 27 L80 27 Z M22 96 L31 90 L178 91 L184 98 L184 196 L183 197 L152 172 L142 166 L134 168 L111 186 L79 159 L73 157 L64 161 L22 194 Z M71 45 L79 39 L228 40 L234 48 L233 161 L225 167 L196 166 L196 98 L193 90 L187 83 L178 79 L71 79 Z\"/></svg>", "torch": "<svg viewBox=\"0 0 256 256\" aria-hidden=\"true\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M125 149 L122 151 L121 157 L124 161 L129 162 L133 159 L134 153 L130 149 Z M78 41 L82 62 L94 81 L99 93 L100 233 L107 242 L113 245 L142 245 L152 238 L156 228 L156 93 L161 81 L173 62 L177 41 Z M125 111 L135 113 L142 122 L142 160 L140 164 L132 170 L123 170 L119 168 L113 160 L113 122 L120 113 Z M78 22 L78 34 L176 34 L176 18 L172 12 L165 9 L90 9 L81 14 Z\"/></svg>"};
   // 丸いボタン：Liquid Glass 版（lg-button）。data-act の処理はそのまま使える
   const lgCircle = (cls, act, label, icon) => (LGON()
     ? `<lg-button class="${cls}" radius="capsule" data-act="${act}" aria-label="${label}">${icon}</lg-button>`
     : `<button class="${cls}" data-act="${act}" aria-label="${label}">${icon}</button>`);
   // 部品の読み込みが済んだら、Liquid Glass 版で描き直す
+  // メニュー（#pop）を開いている間は、ページ全体を動かすタッチ移動を止める（シート内のスクロールだけ許可）
+  document.addEventListener('touchmove', (e) => {
+    if (!($('#pop') || $('#sheet.in'))) return;
+    if (e.target && e.target.closest && e.target.closest('.sheet')) return;
+    e.preventDefault();
+  }, { passive: false });
   window.addEventListener('lgready', () => { try { render(); } catch (e) { console.warn('lgready render', e); } });
 
   /* -------------------------------------------------------------- languages */
@@ -298,7 +306,7 @@
     const it = (nav, icon, label, key, extra = '') => `<button class="sb-item" data-nav="${nav}" data-key="${key}" ${extra}>${icon}<span>${label}</span></button>`;
     return `<div class="sb-head"><button class="icon-btn" data-act="layout" aria-label="サイドバーを隠す">${I.window}</button></div>
       <div class="sb-list" id="sblist"><span class="thumb" id="sthumb"></span>
-        ${it('translate', I.translate, '翻訳', 'translate')}${it('camera', '<span class="ico ico-camera" aria-hidden="true"></span>', 'カメラ', 'camera')}${it('conversation', I.people, '会話', 'conversation')}${it('siri', I.siri, 'Siri', 'siri')}
+        ${it('translate', I.translate, '翻訳', 'translate')}${it('camera', ICON_SVG.camera, 'カメラ', 'camera')}${it('conversation', I.people, '会話', 'conversation')}${it('siri', I.siri, 'Siri', 'siri')}
         <button class="sb-sec" data-act="favtoggle"><span>お気に入り</span><i class="${S.favOpen ? '' : 'shut'}">${I.chev}</i></button>
         ${S.favOpen ? it('fav', I.starO, 'すべてのお気に入り', 'fav:') + pairs.map((p) => { const [a, b] = p.split('>'); return it('fav', I.starO, esc(pairLabel(a, b)), 'fav:' + p, `data-pair="${p}"`); }).join('') : ''}
       </div>`;
@@ -650,7 +658,7 @@
       <div id="camdemo" hidden><div class="demo-bg"><div class="demo-sign"><div class="ov" id="demoOv" hidden></div>${I.bike}${I.bigArrow}</div></div><div class="demo-note">カメラを利用できないためデモ画面を表示しています</div></div>
       <div id="camov"></div>
       <div class="cam-hint" id="camHint">シャッターボタンをタップして一時停止</div>
-      <div class="cam-ctl"><button data-act="camPhotos" aria-label="写真を選択"><span class="ico ico-photos" aria-hidden="true"></span></button><button class="shutter" id="shutter" data-act="shutter" aria-label="一時停止"><i></i></button><button class="torch" id="torch" data-act="torch" aria-label="ライト"><span class="ico ico-torch" aria-hidden="true"></span></button></div>
+      <div class="cam-ctl"><button data-act="camPhotos" aria-label="写真を選択">${ICON_SVG.photos}</button><button class="shutter" id="shutter" data-act="shutter" aria-label="一時停止"><i></i></button><button class="torch" id="torch" data-act="torch" aria-label="ライト">${ICON_SVG.torch}</button></div>
       <div class="cam-langs"><button class="lang-sel" data-lang="src" id="cLs"></button><span class="arr">${I.arrow}</span><button class="lang-sel" data-lang="tgt" id="cLt"></button></div>
       <input type="file" id="camfile" accept="image/*" hidden>
     </div>`;
@@ -1544,7 +1552,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       return { t: '設定', h: `<div class="st-appicon">${I.gearApp}</div><div class="st-grp"><button class="st-row nav" data-act="st:go" data-p="appearance"><span>外観</span><em>${a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト'}</em>${chevR}</button></div>
         <div class="st-grp"><button class="st-row nav" data-act="st:ai"><span>AI翻訳（Gemini）</span><em>${hasAI() ? esc(AI().model) : '未設定'}</em>${chevR}</button></div>
         <p class="st-cap">Siri・カメラ翻訳・翻訳の高速化に Gemini を使います。</p>
-        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.3</em></div></div>` };
+        <div class="st-grp"><div class="st-row"><span>バージョン</span><em>1.4</em></div></div>` };
     }
     if (p === 'appearance') {
       const eff = effTheme();
@@ -2130,9 +2138,16 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
         if (window.caches) caches.keys().then((ks) => ks.filter((k) => k.startsWith('xlate-')).forEach((k) => caches.delete(k))).catch(() => {});
         return;
       }
+      // 新しい版に入れ替わったら一度だけ読み直す（ホーム画面に追加したアプリで古い版に固まらないように）
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded) { reloaded = true; location.reload(); } });
       window.addEventListener('load', () => {
-        try { navigator.serviceWorker.register('sw.js').catch((err) => console.warn('sw register failed', err)); }
-        catch (err) { console.warn('sw register skipped', err); }
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+          // 起動するたび・前面に戻るたびに、新しい版がないか確認する
+          const check = () => reg.update().catch(() => {});
+          check();
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+        }).catch((err) => console.warn('sw register failed', err));
       });
     } catch (err) { console.warn('service worker setup skipped', err); }
   }

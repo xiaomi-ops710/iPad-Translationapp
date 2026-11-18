@@ -1135,3 +1135,9 @@ body:has(#pop),body:has(.sheet){overflow:hidden;overscroll-behavior:none}
 lg-button.st-lg-back .lg-button__el{width:clamp(52px,5.2vw,62px);height:clamp(52px,5.2vw,62px);min-height:0}
 lg-button.st-lg-back .lg-button__label svg{width:28px;height:28px}
 
+/* ======================================================================
+   v1.4：サイドバーの項目の高さと間隔を小さく（選択の楕円も同じ高さに追従）
+   ====================================================================== */
+.sb-list{display:flex;flex-direction:column;gap:0}
+.sb-item{min-height:3.8vw;margin:0;padding:0 1.6vw}
+

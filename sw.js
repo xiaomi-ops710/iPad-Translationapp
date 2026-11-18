@@ -2,7 +2,7 @@
  * 更新を配信するときは VERSION を上げる（古いキャッシュは activate 時に消える）。
  * ・同じオリジンの GET だけを扱い、翻訳 API や Gemini などの外部リクエストには一切触れない。
  * ・アプリ本体は「ネットワーク優先 → 失敗したらキャッシュ」。オンラインなら常に最新が表示され、古い版に固まらない。 */
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE = 'xlate-' + VERSION;
 const SHELL = [
   './', 'index.html', 'style.css', 'app.js', 'icons.js', 'manifest.webmanifest',
@@ -30,7 +30,7 @@ self.addEventListener('fetch', (e) => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;   // 外部 API などは素通し
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })   // HTTP キャッシュを通さず、必ずサーバーに問い合わせる
       .then((res) => {
         if (res && res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {}); }
         return res;
