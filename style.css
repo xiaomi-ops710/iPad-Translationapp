@@ -1141,3 +1141,23 @@ lg-button.st-lg-back .lg-button__label svg{width:28px;height:28px}
 .sb-list{display:flex;flex-direction:column;gap:0}
 .sb-item{min-height:3.8vw;margin:0;padding:0 1.6vw}
 
+/* ======================================================================
+   v1.5：スマホ下部のタブバー（時計アプリと同じく中央・画面幅の約 94%）
+   タブ自体を均等に伸ばす（以前は固定幅のため左に寄っていた）
+   ====================================================================== */
+.phone #topbar{left:0;right:0;justify-content:center;padding-bottom:max(10px,calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) - 6px))}
+.phone .tabs{width:94vw;max-width:none;flex:none;margin:0 auto;padding:1.1vw}
+.phone .tab{flex:1 1 0;width:auto;min-width:0;padding:2.6vw 0 3vw}
+.phone .tab svg,.phone .tab .tic{width:clamp(20px,6.2vw,28px);height:clamp(20px,6.2vw,28px)}
+
+/* ======================================================================
+   v1.5：Liquid Glass の画面：検索バーの幅を固定して右端を丸くする。並び替えボタンのアイコンの大きさ
+   ====================================================================== */
+.st-hero-bar{right:auto;width:58.2cqw;left:40.1%}
+lg-button.st-hsearch{flex:none;width:47.75cqw;min-width:0}
+lg-button.st-hsearch .lg-button__el{width:100%}
+lg-button.st-hfilter{flex:none;width:8.05cqw}
+.st-hero-bar lg-button.st-hfilter svg,.st-hbtn.st-hfilter svg{width:3.4cqw;height:3.4cqw;flex:none}
+.st-hero-bar lg-button.st-hsearch svg{width:2.6cqw;height:2.6cqw}
+.st-hbtn.st-hsearch{flex:none;width:47.75cqw}
+
