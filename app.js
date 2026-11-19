@@ -1567,7 +1567,7 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   }
   const IC_CLEAR = '<svg viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2.5" width="17" height="13" rx="4.5"/><rect x="8.5" y="8" width="17" height="13" rx="4.5"/></svg>';
   const IC_TINT = '<svg viewBox="0 0 28 24" fill="currentColor" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2.5" width="17" height="13" rx="4.5" fill="none"/><rect x="8.5" y="8" width="17" height="13" rx="4.5"/></svg>';
-  const APP_VERSION = '2.1';
+  const APP_VERSION = '2.2';
   const SP_IC = {
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.4 2.4 2.7-.6.6 2.7 2.4 1.4-1.2 2.4 1.2 2.4-2.4 1.4-.6 2.7-2.7-.6L12 21.2l-1.4-2.4-2.7.6-.6-2.7-2.4-1.4 1.2-2.4-1.2-2.4 2.4-1.4.6-2.7 2.7.6z"/></svg>',
     person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="7.2" r="1.2" fill="currentColor" stroke="none"/><path d="M7.4 9.6h9.2M12 9.6v4.4M9.4 18.2l2.6-4.2 2.6 4.2"/></svg>',
@@ -1594,13 +1594,16 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   };
   // iPad の設定（iPadOS 風）：左のカテゴリに対応する各ページ。hero は詳細の上の説明カード
   // ---- iPhone の設定（iOS の設定の見た目）。iPad は従来の行をそのまま使う ----
+  // 添付のアイコン（img/settings/*.png を切り抜いたもの）
+  const IMG = { appearance: '<img src="img/settings/appearance.png" alt="">', siri: '<img src="img/settings/siri.png" alt="">', access: '<img src="img/settings/access.png" alt="">', general: '<img src="img/settings/general.png" alt="">', info: '<img src="img/settings/info.png" alt="">', update: '<img src="img/settings/update.png" alt="">', storage: '<img src="img/settings/storage.png" alt="">', airdrop: '<img src="img/settings/airdrop.png" alt="">', textsize: '<img src="img/settings/textsize.png" alt="">', motion: '<img src="img/settings/motion.png" alt="">' };
   const IOS_CHEV = '<svg viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5 7.5 8l-6 6.5"/></svg>';
   const IOS_TICK = '<svg class="ios-tick" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l4.8 4.8L19.5 7"/></svg>';
   const grp = (h) => (isPhone() ? `<div class="ios-grp">${h}</div>` : `<div class="st-grp">${h}</div>`);
   // color: アイコンの線の色（null はアイコンなし、'orb' は Siri の球体）
   const iosRow = (act, p, color, ic, label, val, chev = true) => {
     const noic = color === null;
-    const tile = noic ? '' : (color === 'orb' ? '<span class="ios-ic ios-orb"></span>' : `<span class="ios-ic" style="color:${color}">${ic}</span>`);
+    const isImg = typeof ic === 'string' && ic.startsWith('<img');
+    const tile = noic ? '' : (isImg ? `<span class="ios-ic ios-ic-img">${ic}</span>` : (color === 'orb' ? '<span class="ios-ic ios-orb"></span>' : `<span class="ios-ic" style="color:${color}">${ic}</span>`));
     return `<button class="ios-row${noic ? ' noic' : ''}" data-name="${label}" data-act="${act}"${p ? ` data-p="${p}"` : ''}>${tile}<span class="ios-lab">${label}</span>${val != null ? `<em>${val}</em>` : ''}${chev ? IOS_CHEV : ''}</button>`;
   };
   const iosInfo = (color, ic, label, val) => {
@@ -1620,8 +1623,8 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
   const aboutLabel = () => { const t = (SIRI_SETTINGS().about || '').trim(); return t ? esc(t.slice(0, 10)) + (t.length > 10 ? '…' : '') : '未設定'; };
   // iPad の設定（左のカテゴリに対応する各ページ）。hero は詳細の上の説明カード
   const SPLIT_PAGES = {
-    general: () => ({ t: '一般', hero: { ic: I.gearApp, title: '一般', desc: 'ソフトウェアアップデート、アプリの情報、ストレージ、アプリの共有など、アプリ全体の設定を管理します。' },
-      h: `${grp(`${phRow('st:go', 'info', '#8e8e93', SP_IC.info, '情報', null)}${phRow('st:go', 'update', '#8e8e93', SP_IC.update, 'ソフトウェアアップデート', null)}${phRow('st:go', 'storage', '#8e8e93', SP_IC.storage, isPhone() ? 'iPhoneストレージ' : 'ストレージ', null)}`)}${grp(phRow('st:share', '', '#0a84ff', SP_IC.share, 'アプリを共有', null))}` }),
+    general: () => ({ t: '一般', hero: { ic: IMG.general, title: '一般', desc: 'ソフトウェアアップデート、アプリの情報、ストレージ、アプリの共有など、アプリ全体の設定を管理します。' },
+      h: `${grp(`${phRow('st:go', 'info', 'img', IMG.info, '情報', null)}${phRow('st:go', 'update', 'img', IMG.update, 'ソフトウェアアップデート', null)}${phRow('st:go', 'storage', 'img', IMG.storage, isPhone() ? 'iPhoneストレージ' : 'ストレージ', null)}`)}${grp(phRow('st:share', '', 'img', IMG.airdrop, 'アプリを共有', null))}` }),
     info: () => { const di = devInfo(), sw = !!(navigator.serviceWorker && navigator.serviceWorker.controller); const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
       return { t: '情報', h: grp(`${phInfo(null, '', 'アプリ名', '翻訳')}${phInfo(null, '', 'バージョン', APP_VERSION)}${phInfo(null, '', '機種', di.dev)}${phInfo(null, '', 'OS', di.os)}${phInfo(null, '', '画面サイズ', `${innerWidth} × ${innerHeight}`)}${phInfo(null, '', '表示', standalone ? 'ホーム画面のアプリ' : 'ブラウザ')}${phInfo(null, '', 'オフライン利用', sw ? '利用できます' : '未対応')}`) }; },
     update: () => { const st = SET.upd ? SP_STATE[SET.upd] : 'アプリの状態を確認できます';
@@ -1630,11 +1633,11 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     storage: () => { if (!SET.storage && !SET.storageBusy) { SET.storageBusy = true; loadStorage(); }
       const s = SET.storage || { usage: 0, quota: 0, files: 0 }, pct = s.quota ? Math.min(100, s.usage / s.quota * 100) : 0;
       return { t: 'ストレージ', h: `${grp(`<div class="sp-st-top"><b>このアプリ</b><span>${fmtBytes(s.usage)}${s.quota ? ' / ' + fmtBytes(s.quota) : ''}</span></div><div class="sp-bar-used"><i style="width:${pct.toFixed(1)}%"></i></div>`)}${grp(`${phInfo(null, '', 'オフライン用ファイル', `${s.files} 件`)}${phInfo(null, '', '保存先', 'この端末のブラウザ')}`)}${grp(phRow('st:clear', '', null, '<span style="color:#ff453a">キャッシュを削除</span>', null, false))}<p class="st-cap">キャッシュを削除すると、アプリを読み直して最新の版を取り込みます。翻訳履歴やお気に入りは消えません。</p>` }; },
-    access: () => ({ t: 'アクセシビリティ', hero: { ic: `<span class="hero-glyph" style="color:#0a84ff">${SP_IC.person}</span>`, title: 'アクセシビリティ', desc: '文字の太さや透明度、動きの量など、見やすさと操作のしやすさを調整します。' },
-      h: grp(`${phRow('st:go', 'a11y-display', '#0a84ff', SP_IC.text, '画面表示とテキストサイズ', null)}${phRow('st:go', 'a11y-motion', '#30d158', SP_IC.motion, '動作', null)}`) }),
+    access: () => ({ t: 'アクセシビリティ', hero: { ic: IMG.access, title: 'アクセシビリティ', desc: '文字の太さや透明度、動きの量など、見やすさと操作のしやすさを調整します。' },
+      h: grp(`${phRow('st:go', 'a11y-display', 'img', IMG.textsize, '画面表示とテキストサイズ', null)}${phRow('st:go', 'a11y-motion', 'img', IMG.motion, '動作', null)}`) }),
     'a11y-display': () => ({ t: '画面表示とテキストサイズ', h: `${grp(`${phSwitch('bold', '文字を太くする')}${phSwitch('lowtr', '透明度を下げる')}`)}${grp(phRow('st:go', 'textsize', null, '', 'テキストサイズ', `${Math.round(AP().ts * 100)}%`))}<p class="st-cap">透明度を下げると、ガラスの色を濃くして文字を読みやすくします。</p>` }),
     'a11y-motion': () => ({ t: '動作', h: `${grp(phSwitch('rm', '視差効果を減らす'))}<p class="st-cap">オンにすると、メニューの開閉やガラスの動きを控えめにします。</p>` }),
-    siri: () => ({ t: 'Siri', hero: { ic: '<span class="ios-siri-tile"><span class="ios-orb-big"></span></span>', title: 'Siri', desc: 'Gemini を使って、質問への回答や問題の作成を行います。API キーはこの端末にだけ保存されます。' },
+    siri: () => ({ t: 'Siri', hero: { ic: IMG.siri, title: 'Siri', desc: 'Gemini を使って、質問への回答や問題の作成を行います。API キーはこの端末にだけ保存されます。' },
       h: `${grp(`${phInfo(null, '', '言語', '日本語')}${phRow('st:go', 'siri-len', null, '', '応答の長さ', lenLabel())}${phRow('st:go', 'siri-about', null, '', 'あなたの情報', aboutLabel())}`)}<p class="st-cap">ここで設定した内容は、次の質問から回答に反映されます。</p><div class="ios-h">Siriアプリ</div>${grp(`${phRow('st:go', 'siri-open', null, '', '開いたときに表示', openLabel())}${phInfo(null, '', 'チャットを保持', '最大40件')}`)}${grp(`${phRow('st:go', 'apikey', null, '', 'APIキー', hasAI() ? '設定済み' : '未設定')}${phInfo(null, '', 'モデル', esc(AI().model))}`)}` }),
     'siri-len': () => { const cur = SIRI_SETTINGS().len || 'normal';
       return { t: '応答の長さ', h: `${grp([['short', '短く'], ['normal', '標準'], ['long', '詳しく']].map(([v, l]) => choiceRow('st:siri', 'len', v, l, cur === v)).join(''))}<p class="st-cap">短くすると、回答が簡潔になります。詳しくすると、説明を多めに書きます。</p>` }; },
@@ -1648,9 +1651,8 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
     if (SPLIT_PAGES[p]) return SPLIT_PAGES[p]();
     if (p === 'root') {
       const mode = a.mode === 'auto' ? '自動' : a.mode === 'dark' ? 'ダーク' : 'ライト';
-      return { t: '設定', h: `<h1 class="ios-title">設定</h1>
-        <div class="ios-grp">${iosRow('st:go', 'general', '#8e8e93', SP_IC.gear, '一般', null)}${iosRow('st:go', 'access', '#0a84ff', SP_IC.person, 'アクセシビリティ', null)}${iosRow('st:go', 'siri', 'orb', '', 'Siri', null)}${iosRow('st:go', 'appearance', '#ffffff', SP_IC.half, '外観', mode)}</div>
-        <div class="ios-grp">${iosInfo('#8e8e93', SP_IC.info, 'バージョン', APP_VERSION)}</div>
+      return { t: '設定', h: `<div class="ios-grp">${iosRow('st:go', 'general', 'img', IMG.general, '一般', null)}${iosRow('st:go', 'access', 'img', IMG.access, 'アクセシビリティ', null)}${iosRow('st:go', 'siri', 'img', IMG.siri, 'Siri', null)}${iosRow('st:go', 'appearance', 'img', IMG.appearance, '外観', mode)}</div>
+        <div class="ios-grp">${iosInfo(null, '', 'バージョン', APP_VERSION)}</div>
         ${iosSearch()}` };
     }
     if (p === 'appearance') {
@@ -1779,10 +1781,10 @@ Variation seed: ${Math.random().toString(36).slice(2, 8)}. Return only JSON.`;
       ? `<lg-button class="st-lg-back" radius="22" refraction="18" bezel="0.9" curvature="3" specular="0.9" specular-width="2" chroma="0.08" data-act="st:back" aria-label="${backLabel}">${backIc}</lg-button>`
       : `<button class="st-circ" data-act="st:back" aria-label="${backLabel}">${backIc}</button>`;
     const phBar = root
-      ? `<span class="ios-ph"></span><b></b><button class="ios-close" data-act="st:back" aria-label="閉じる">${I.x}</button>`
+      ? `<span class="ios-ph"></span><b>設定</b><button class="ios-close" data-act="st:back" aria-label="閉じる">${I.x}</button>`
       : `<button class="ios-circ" data-act="st:back" aria-label="戻る"><svg viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 1.5 1.5 8l6 6.5"/></svg></button><b>${pg.t}</b><span class="ios-ph"></span>`;
     const heroHTML = (!root && pg.hero) ? iosHero(pg.hero) : '';
-    d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}"><div class="st-bar">${phBar}</div><div class="st-scroll"><div class="st-body">${heroHTML}${pg.h}</div></div></div>`;
+    d.innerHTML = `<div class="st-wrap${dir ? ' ' + dir : ''}${root ? ' ios-root' : ''}"><div class="st-bar">${phBar}</div><div class="st-scroll"><div class="st-body">${heroHTML}${pg.h}</div></div></div>`;
     glassifyAll();
   }
   function openSettings() { SET.stack = isPhone() ? ['root'] : ['general']; SET.storage = null; SET.upd = null; closePop(); renderSettings(); }

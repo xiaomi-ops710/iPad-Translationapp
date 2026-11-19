@@ -1426,3 +1426,36 @@ html.lowtr lg-panel{--lg-tint:rgb(28 28 30 / .8)}
   #settings #aiRes{color:var(--sub);font-size:15px}
 }
 
+/* ======================================================================
+   v2.2：添付の iOS の設定画面に合わせた寸法（pt＝px、iPhone 393pt 幅）
+   ・ナビゲーションの戻るボタン：左 16、直径 44、上端 59
+   ・上部の大きなカード：上端 148、左右の余白 16、角丸 24、高さ 187（一般）
+   ・カード内：アイコン 59（上 15、左 21）、タイトル 22pt 太字、説明 16pt（行間 19.5）
+   ・行：高さ 49、アイコン 28（左 17、右 12）、文字 17pt、文字は左から 72.7
+   ・区切り線：左 57、右の端から 20
+   ・グループ間：35
+   ====================================================================== */
+@media (max-width:699px){
+  #settings .st-bar{padding:calc(var(--safe-area-inset-top,0px) + 8px) 16px 6px}
+  #settings .st-body{padding-top:31px}
+  #settings .ios-root .st-body{padding-top:6px}
+  #settings .ios-root .st-bar b{font-size:17px}
+
+  #settings .ios-hero{padding:15px 21px 17px}
+  #settings .ios-hero-ic{width:59px;height:59px;margin:0 0 17px;background:none;border-radius:0;overflow:visible;display:block}
+  #settings .ios-hero-ic img{width:59px;height:59px;display:block;border-radius:13px}
+  #settings .ios-hero b{font-size:22px;line-height:26px;margin-bottom:10px}
+  #settings .ios-hero p{font-size:16px;line-height:19.5px}
+
+  #settings .ios-ic.ios-ic-img{width:28px;height:28px;margin:0 12px 0 17px;background:none;box-shadow:none;display:block;border-radius:0}
+  #settings .ios-ic-img img{width:28px;height:28px;display:block;border-radius:6.3px}
+  #settings .ios-row{min-height:49px;padding:0 20px 0 0}
+  #settings .ios-row+.ios-row::before{left:57px;right:20px}
+  #settings .ios-row.noic+.ios-row::before{left:16px}
+  #settings .ios-row>svg{color:#7c7c80}
+  #settings .ios-grp{margin:0 16px 35px;border-radius:24px}
+  #settings .ios-ic{background:none;box-shadow:none}
+  #settings .ios-ic-img{}
+}
+.rico img{width:28px;height:28px;display:block}
+
