@@ -17,18 +17,18 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 <title>翻訳</title>
-<link rel="stylesheet" href="style.css?v=2.0">
+<link rel="stylesheet" href="style.css?v=2.1">
 </head>
 <body>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite"></div>
-<script src="icons.js?v=2.0"></script>
+<script src="icons.js?v=2.1"></script>
 <script type="module">
   // Liquid Glass コンポーネント（iOS 26 風）。読み込めなくてもアプリは従来の設定画面で動く
   import('https://liquidglass.dev/lib/components.js')
     .then(() => { console.info('[LiquidGlass] components loaded'); window.dispatchEvent(new Event('lgready')); })
     .catch((e) => console.warn('[LiquidGlass] load failed; using fallback controls', e));
 </script>
-<script src="app.js?v=2.0"></script>
+<script src="app.js?v=2.1"></script>
 </body>
 </html>

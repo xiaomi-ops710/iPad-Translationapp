@@ -1345,3 +1345,84 @@ html.lowtr lg-panel{--lg-tint:rgb(28 28 30 / .8)}
 .m-a{font-size:calc(17px*var(--ts,1));line-height:1.55}
 .m-a strong,.m-a b{font-weight:700}
 
+/* ======================================================================
+   v2.1：iPhone の設定（添付の iOS の設定画面を測定して合わせた寸法。単位は pt＝px）
+   カード左右の余白 16、角丸 24、行の高さ 49、アイコン 28 角丸 6.5、
+   区切り線は文字位置（左 57）から右端の手前 20、グループ間の余白 35
+   ====================================================================== */
+.ios-tick{width:18px;height:18px;flex:none;margin-left:10px}
+.sp-field-ta{padding:0}
+.sp-field-ta textarea{display:block;width:100%;box-sizing:border-box;border:0;background:transparent;color:var(--ink);font:inherit;font-size:17px;line-height:1.4;padding:14px 16px;min-height:132px;resize:none;outline:none;-webkit-appearance:none;appearance:none}
+.hero-glyph{display:inline-grid;place-items:center}
+.hero-glyph svg{width:56px;height:56px}
+.ios-siri-tile{display:grid;place-items:center;width:58px;height:58px;border-radius:13px;background:#f2f2f5;overflow:hidden}
+.ios-orb-big{display:block;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 42% 34%,#9aa0a9 0%,#4a4e57 38%,#17181c 78%);box-shadow:inset 0 -5px 9px rgba(255,255,255,.22),inset 0 2px 4px rgba(255,255,255,.35)}
+.ios-ic.ios-orb{background:radial-gradient(circle at 42% 34%,#9aa0a9 0%,#4a4e57 38%,#17181c 78%);box-shadow:inset 0 -3px 5px rgba(255,255,255,.2)}
+
+@media (max-width:699px){
+  #settings .st-bar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;height:auto;padding:calc(var(--safe-area-inset-top,0px) + 12px) 16px 6px;box-sizing:border-box}
+  #settings .st-bar b{font-size:17px;font-weight:600;text-align:center;white-space:nowrap}
+  #settings .ios-ph{display:block;width:44px}
+  #settings .ios-circ{justify-self:start;width:44px;height:44px;border-radius:50%;border:0;padding:0;background:rgba(120,120,128,.28);color:var(--ink);display:grid;place-items:center}
+  #settings .ios-circ svg{width:9px;height:16px}
+  #settings .ios-close{justify-self:end;width:34px;height:34px;border-radius:50%;border:0;padding:0;background:rgba(120,120,128,.26);color:var(--ink);display:grid;place-items:center}
+  #settings .ios-close svg{width:15px;height:15px}
+  #settings .st-scroll{padding:0 0 96px}
+  #settings .st-body{padding-top:30px}
+  #settings .ios-title{font-size:34px;font-weight:700;margin:4px 16px 18px;letter-spacing:.2px}
+
+  /* 大きなカード（一般・アクセシビリティ・Siri） */
+  #settings .ios-hero{background:var(--card);border-radius:24px;margin:0 16px 35px;padding:15px 21px 18px;box-sizing:border-box}
+  #settings .ios-hero-ic{width:58px;height:58px;border-radius:13px;overflow:hidden;display:grid;place-items:center;background:#17171a;margin-bottom:18px}
+  #settings .ios-hero-ic>svg{width:58px;height:58px}
+  #settings .ios-hero b{display:block;font-size:22px;font-weight:700;line-height:26px;margin-bottom:10px}
+  #settings .ios-hero p{margin:0;font-size:16px;line-height:19.5px;color:var(--sub)}
+
+  /* 角丸グループと行 */
+  #settings .ios-grp{background:var(--card);border-radius:24px;margin:0 16px 35px;overflow:hidden;position:relative}
+  #settings .ios-row{position:relative;display:flex;align-items:center;width:100%;min-height:49px;padding:0 22px 0 0;border:0;background:none;color:var(--ink);font:inherit;font-size:17px;text-align:left;box-sizing:border-box}
+  #settings .ios-row+.ios-row::before{content:"";position:absolute;left:57px;right:20px;top:0;height:.5px;background:var(--line);pointer-events:none}
+  #settings .ios-row.noic{padding-left:16px}
+  #settings .ios-row.noic+.ios-row::before{left:16px}
+  #settings .ios-ic{width:28px;height:28px;border-radius:6.5px;flex:none;display:grid;place-items:center;background:#17171a;margin:0 12px 0 17px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.07)}
+  #settings .ios-ic svg{width:18px;height:18px}
+  #settings .ios-lab{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #settings .ios-row>em{font-style:normal;color:var(--sub);margin-left:8px;white-space:nowrap}
+  #settings .ios-row>svg{width:9px;height:16px;color:#636366;flex:none;margin-left:10px}
+  #settings .ios-row[hidden]{display:none}
+  #settings .ios-h{font-size:13px;line-height:17px;color:var(--sub);margin:0 36px 7px}
+  #settings .ios-cap{font-size:13px;line-height:17px;color:var(--sub);margin:-22px 36px 35px}
+  #settings .st-cap{font-size:13px;line-height:17px;color:var(--sub);margin:-22px 36px 35px}
+
+  /* アップデート画面 */
+  #settings .ios-upd{padding:16px 18px 18px;box-sizing:border-box}
+  #settings .ios-upd-top{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  #settings .ios-upd-ic{width:58px;height:58px;border-radius:13px;flex:none}
+  #settings .ios-upd-top b{display:block;font-size:17px;font-weight:600}
+  #settings .ios-upd-top span{display:block;font-size:15px;color:var(--sub);margin-top:2px}
+  #settings .ios-btn{display:block;width:100%;height:50px;border:0;border-radius:999px;background:#0a84ff;color:#fff;font:inherit;font-size:17px;font-weight:600}
+
+  /* トグル（iOS 26 の見た目：緑の枠・白い丸・枠内の「I」） */
+  #settings .st-sw.ios-sw{position:relative;width:51px;height:31px;border-radius:999px;background:rgba(120,120,128,.36);flex:none;margin-left:12px;transition:background .25s}
+  #settings .st-sw.ios-sw.on{background:#34c759}
+  #settings .st-sw.ios-sw i{position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.25);transform:none;transition:transform .3s cubic-bezier(.3,1.3,.5,1)}
+  #settings .st-sw.ios-sw i::after{display:none}
+  #settings .st-sw.ios-sw.on i{transform:translateX(20px)}
+  #settings .st-sw.ios-sw.on::before{content:"";position:absolute;left:10px;top:50%;width:2px;height:9px;margin-top:-4.5px;border-radius:1px;background:#fff}
+
+  /* 下部の検索バー */
+  #settings .ios-search{position:fixed;left:16px;right:16px;bottom:calc(var(--safe-area-inset-bottom,0px) + 12px);z-index:6}
+  #settings lg-panel.ios-sq-p{display:flex;padding:0;background:none;box-shadow:none;color:var(--ink);height:44px}
+  #settings lg-panel.ios-sq-p>.lg-panel__body{display:flex;width:100%;height:100%}
+  #settings .ios-sq-plain{background:rgba(120,120,128,.26);border-radius:999px;height:44px;display:flex;backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6)}
+  #settings .ios-sq{display:flex;align-items:center;gap:8px;width:100%;height:44px;padding:0 16px;box-sizing:border-box;color:var(--sub)}
+  #settings .ios-sq svg{width:19px;height:19px;flex:none}
+  #settings .ios-sq input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:17px;color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+  /* 設定のテキスト入力・ボタン行の位置 */
+  #settings .sp-field{display:flex;align-items:center;justify-content:space-between;min-height:49px;padding:0 16px;border-bottom:.5px solid var(--line)}
+  #settings .sp-field span{font-size:17px;flex:none}
+  #settings .sp-field input{flex:1;min-width:0;text-align:right;border:0;background:transparent;font:inherit;font-size:17px;color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+  #settings .ios-grp>.sp-field:last-child{border-bottom:0}
+  #settings #aiRes{color:var(--sub);font-size:15px}
+}
+
